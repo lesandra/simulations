@@ -9,13 +9,14 @@ from scipy.interpolate import interp1d
 
 
 #===========================================================================================================
-def effective_zenith(x_ant, y_ant, z_ant, zen, azim, alpha, injectionheight=3000.) :
+def effective_zenith(x_ant, y_ant, z_ant, zen, azim, alpha, injectionheight=3000.):
 #===========================================================================================================	
+# Effective zenith (computed in antenna referential, ie theta<90deg <=> downward)
 	zen = zen * np.pi / 180
 	azim = azim * np.pi / 180
 	alpha = alpha * np.pi / 180
 	
-	print 'effective zenith angle used for calculating the antenna response'
+	print 'Effective zenith angle used for calculating the antenna response.'
 	###get the effectiv zenith
 	## find approx. Xmax position
 	# shower direction: where it goes to
@@ -48,9 +49,6 @@ def effective_zenith(x_ant, y_ant, z_ant, zen, azim, alpha, injectionheight=3000
 	# get effective zenith, the angle between antenna vector and vector between xmax and antenna
 	cos_zen_eff= np.dot(u_xmax, u_ant)
 	zen_eff=  np.arccos(cos_zen_eff)
-		
-	print 'effective zenith: ', zen_eff*180./pi, 'deg'
-
 	zen_eff = zen_eff*180./pi
 
 	return [zen_eff , Xmax]
@@ -60,74 +58,43 @@ def effective_zenith(x_ant, y_ant, z_ant, zen, azim, alpha, injectionheight=3000
 #===========================================================================================================
 def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None, EW=1):
 #===========================================================================================================
-    effective=1 # if you wanna use the effective zenith angle between antenna and shower set value to 1
+    # Note: azim & zenith are in NEC conventions (x=WE, y=SN, z= Up, azim clockwise from x, theta<90deg downward)
 
-
-    azim=azimuth
-    
-        
+    print 'get_voltage: computing antenna response for wave with zenith=',zenith,'deg, azimuth=',azimuth,'deg (**NEC conventions**).'
+    azim=azimuth         
     delt = time1[1]-time1[0];
-    Fs = 1/delt
-    
+    Fs = 1/delt   
     time_off=time1[0] # time offset, to get absolute time
     time1 = (time1-time1[0]) #resetted to zero
-    print 'Efield signal length: ', time1[-1]*1e9 , 'ns.'
+    #print 'Efield signal length: ', time1[-1]*1e9 , 'ns.'
 
-
-##### the angle conversion    
+    
+    ##### efield in antenna frame
     zen = zenith*pi/180;
     azim = azim*pi/180;
-	
-    ## azimuth: internal conversion from GRAND conventions to antenna response conventions since GRAND North=0deg, antenna EAST=0deg
-    azim= azim + 0.5*pi # az_ant=az_GRAND +90deg
-    # TODO zenith correction: is NEC running fo upgoing or downgoing showers , at the moment that is like GRAND conv if this is true
-    # zenith= 0,..,90deg
-    print "azimuth in antenna frame ", azim* 180./pi
-    
-##### efield in antenna frame
     szen = np.sin(zen);
     czen = np.cos(zen);
     saz = np.sin(azim);
     caz = np.cos(azim);
-
-    #amplitudet = czen*(caz*Ex+saz*Ey)-szen*Ez
-    #amplitudep = -saz*Ex+caz*Ey
+    #amplitudet = czen*(caz*Ex+saz*Ey)-szen*Ez  # Wrong because Ex&Ey defined in GRAND ref
+    #amplitudep = -saz*Ex+caz*Ey # Wrong because Ex&Ey defined in GRAND ref
+    #We have to rotate the Ex & Ey vectors by 90deg around the z axis to project them into the NEC referential 
+    #(y_NEC = x_Grand & x_NEC=-y_GRAND, since delta az( NEC- GRAND) =90deg => 90deg rotation around zaxis) 
     amplitudet = czen*(caz*Ey-saz*Ex)-szen*Ez
     amplitudep = -saz*Ey-caz*Ex
-    #Anne :
-    #Above we have to rotate the vector by 90deg around the z axis to go into the NEC sytsem 
-    #(y_NEC = x_Grand & x_NEC=-y_GRAND, since delta az( NEC- GRAND) =90deg => 90deg rotation around zaxis) 
-    #and then calculate the efield vector in the antenna system.
-
-    ## for the antenna response do back to degree
+    ## for the antenna response switch back to degree
     azim = azim* 180./pi
     zen = zen* 180./pi
     
-    
-    #if (azim > 180.):
-        #azim = azim- 360.
-    #if (azim < 0):
-        #azim = abs(azim) # symmetric
-        
-    #if (zen > 90.):
-        #zen= 180. - zen # symmetric
-        #print zen
-
-
 
 ##################################
-    #fileleff='1ant10mavgnd_leff.npy' #not loaded,
-    if EW==1:
-        fileleff=antenna_path+'butwidebasedoublehflat_4p5mhalf_leff.npy' #last one, not loaded
-    if EW==0: #NS component
-        fileleff=antenna_path+'butwidebasedoublehflat_4p5mhalf_leff.npy' #last one, not loaded --- has to be changed to NS file
-        
+
+    fileleff='butwidebasedoublehflat_4p5mhalf_leff.npy' 
+    if EW==0: #NS component        
         # still our fake NS component
         azim= azim + 90. #0.5*pi # az=az +90deg, to get antenna response for a rotated shower which would fake the NS antenna component
         if azim >360.:
             azim= azim- 360.
-
-
     azstep=1 #step in azimuth in npy file
     freqscale=1 #freq*2 if h/2 and sizeant/2
     outputpower=0 #if wanted output is power
@@ -268,15 +235,11 @@ def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None
         vt=vt**2
         vp=vp**2
         
-    voltage = vp+ vt
-    
-
-    
+    voltage = vp + vt
     timet     = np.arange(0, len(vt))/Fs
     timep     = np.arange(0, len(vp))/Fs
     
-    print '\n'
-    print 'peak to peak voltage amplitude = ', max(voltage) - min(voltage)
+    print 'Peak to peak voltage amplitude = ', max(voltage) - min(voltage),'muV'
 
     return(voltage, timet+time_off)
 
@@ -285,103 +248,100 @@ def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None
 #===========================================================================================================
 # Compute the time dependent voltage
 #===========================================================================================================
-## example: python computevoltage.py 85 45 0 ./ 0 a0.trace 
-## if effective zenith wanted -- inside function, set effective to 1 plus hand over antenna postion x,y,z in m:  python computevoltage.py 85 45 0 ./ 0 a0.trace 0 34000 3000
-#'''
-# Read zen and az value from input
-zenith_sim=float(sys.argv[1])
-azimuth_sim=float(sys.argv[2])
+if __name__ == '__main__':
+  
+  if len(sys.argv)<7:
+        print 'Wrong number of arguments. Usage: python computevoltage.py [zenith] [azimuth] [slope] [path to traces] [AntennaID] [effective 1/0] [opt: antenna x,y,z]'
+    	## example: python computevoltage.py 85 45 0 ./ 0 a0.trace 
+	## if effective zenith wanted -- inside function, set effective to 1 plus hand over antenna postion x,y,z in m:  python computevoltage.py 85 45 0 ./ 0 a0.trace 0 34000 3000
+  	## Zenith and azimuth here in deg & using GRAND conventions
+	sys.exit(0)
+  
+  # Read zen and az value from input
+  zenith_sim=float(sys.argv[1])  # 
+  azimuth_sim=float(sys.argv[2])
 
-## include a mountain slope - correction of zenith angle
-alpha_sim=float(sys.argv[3])
+  ## include a mountain slope - correction of zenith angle
+  alpha_sim=float(sys.argv[3])
 
-# which efield trace do you wanna read in. to be consistent the script works with the antenna ID
-path=sys.argv[4] #folder containing the traces and where the output should go to
-l=sys.argv[5] # antenna ID
-efieldtxt=path+'a'+str(l)+'.trace'
+  # which efield trace do you wanna read in. to be consistent the script works with the antenna ID
+  path=sys.argv[4] #folder containing the traces and where the output should go to
+  l=sys.argv[5] # antenna ID
+  efieldtxt=path+'/a'+str(l)+'.trace'
 
-print 'Wave direction in GRAND conv.: zenith = ', zenith_sim, ' deg, azimuth = ', azimuth_sim, 'deg.', 'efield file: ', efieldtxt , ' mountain slope: ', alpha_sim
+  print 'Wave direction: zenith = ', zenith_sim, ' deg, azimuth = ', azimuth_sim, 'deg. (GRAND conventions), mountain slope: ', alpha_sim, 'deg.'
+  print 'Efield file: ', efieldtxt
+  
+  # Model the input signal.
+  time1_sim, Ex_sim, Ey_sim,Ez_sim = np.loadtxt(efieldtxt,delimiter=' ',usecols=(0,1,2,3),unpack=True)
+  # NOTE: adapt to your time from whatever to s
+  time1_sim= time1_sim*1e-9 # time has to be handed in s
 
+  print 'Now computing antenna response...'
+  effective = float(sys.argv[6])
+  if effective==1:
+  # Compute effective zenith
+  	  # First get antenna position
+  	  if len(sys.argv)==10:
+  		  print 'Reading antenna position from parameter input.'
+		  x_sim = float(sys.argv[7])
+  		  y_sim = float(sys.argv[8])
+  		  z_sim = float(sys.argv[9])
+ 
+  	  else :
+  		  try :
+  			  print 'Trying to read antenna position from antpos.dat file...'
+			  numberline = int(l) + 1
+			  line = linecache.getline(path+'/antpos.dat', numberline)
+			  [x_sim, y_sim, z_sim] = map(float, line.split())
+  			  print 'Done. Antenna position at', x_sim, y_sim, z_sim
+ 
+  		  except : 
+ 			  print 'No antenna position file found, please put antpos.dat in', path, 'or enter antenna positions as arguments.'
+  			  sys.exit()
 
-# Model the input signal.
-#time1_sim, Ex_sim, Ey_sim,Ez_sim = np.loadtxt(efieldtxt,delimiter='  ',usecols=(1,2,3,4),unpack=True)
-time1_sim, Ey_sim, Ex_sim,Ez_sim = np.loadtxt(efieldtxt,delimiter='  ',usecols=(1,2,3,4),unpack=True)
-# NOTE: adapt to your time from whatever to s
-time1_sim= time1_sim*1e-6 # time has to be handed in s
+  	  [zenith_eff, Xmax] = effective_zenith(x_sim, y_sim, z_sim, zenith_sim, azimuth_sim, alpha_sim)
+ 
+  else: # in case effective zenith not wanted, one still has to account for mountain slope and switch to NEC conventions.
+  ## zenith: correct for mountain slope
+	  zenith_eff= 180-(zenith_sim+alpha_sim) # Switch to antenna convention
+      ## azimuth: internal conversion from GRAND conventions to antenna response conventions since GRAND North=0deg, antenna EAST=0deg
+  azimuth_sim = azimuth_sim + 90 # az_ant=az_GRAND +90deg
+  if azimuth_sim>360:
+    azimuth_sim = azimuth_sim-360
+    
+  print 'Effective zenith (in NEC conventions): ', zenith_eff,' deg.'	  
+  print "Azimuth (in NEC conventions) ", azimuth_sim,' deg.'    
+  if zenith_eff > 90 :
+  	  print ' --- Wave coming from ground (NEC zenith larger than 90deg), antenna response not computed for that angle --- '
+  	  exit()
 
-print 'Now computing antenna response...'
+  
+  # Compute the output voltage for EW component
+  print '*** Computing EW voltage...'
+  voltage_EW, timeEW  = get_voltage( time1=time1_sim,Ex=Ex_sim, Ey=Ey_sim, Ez=Ez_sim, zenith=zenith_eff, azimuth=azimuth_sim, EW=1)
 
-effective = float(sys.argv[6])
+  # Compute the output voltage for NS component -- TODO add here the correct antenna file at some point
+  print '*** Computing SN voltage...'
+  voltage_NS, timeNS = get_voltage( time1=time1_sim,Ex=Ex_sim, Ey=Ey_sim, Ez=Ez_sim, zenith=zenith_eff, azimuth=azimuth_sim, EW=0)
 
-# Compute effeective zenith
-if effective==1:
-	
-	#antenna position
-	try :
-		
-		x_sim = float(sys.argv[7])
-		y_sim = float(sys.argv[8])
-		z_sim = float(sys.argv[9])
-	
-	except :
-	
-		try :
-			
-			numberline = int(l) + 1
-			line = linecache.getline(path + 'antpos.dat', numberline)
-			[x_sim, y_sim, z_sim] = map(float, line.split())
-		
-			print("antenna position at", x_sim, y_sim, z_sim)
-	
-		except :
-		
-			print("No antenna position file find, please enter antenna position as arguments like x y z")
-			sys.exit()
-
-	[zenith_eff, Xmax] = effective_zenith(x_sim, y_sim, z_sim, zenith_sim, azimuth_sim, alpha_sim)
-		
-else: # in case effective zenith not wanted, one has to account for mountain slope.
-## zenith: correct for mountain slope
-	zenith_eff = zenith_sim +alpha # zen_ant= 180deg-(zen_aires-alpha_slope) = zen_GRAND+alpha_slope
-	
-if zenith_eff > 180 :
-	print ' --- GRAND zenith larger than 90deg, antenna response not valid for that angle --- '
-	exit()
-
-
-# Compute the output voltage for EW component
-voltage_EW, timeEW  = get_voltage( time1=time1_sim,Ex=Ex_sim, Ey=Ey_sim, Ez=Ez_sim, zenith=zenith_eff, azimuth=azimuth_sim, EW=1)
-
-# Compute the output voltage for NS component -- TODO add here the correct antenna file at some point
-#voltage_NS, timeNS = get_voltage(Ex=Ey_sim, Ey=-Ex_sim, Ez=Ez_sim, zenith=zenith_sim, azimuth=azimuth_sim-90, alpha=alpha_sim, time1=time1_sim, EW=0) 
-voltage_NS, timeNS = get_voltage( time1=time1_sim,Ex=Ex_sim, Ey=Ey_sim, Ez=Ez_sim, zenith=zenith_eff, azimuth=azimuth_sim, EW=0)
-
-
-pl.savetxt('out_'+str(l)+'.txt', (timeEW, voltage_EW, voltage_NS))#, voltage_NS))
-
+  pl.savetxt('out_'+str(l)+'.txt', (timeEW, voltage_EW, voltage_NS))#, voltage_NS))
 
 
+  ###plots
+  plt.figure(1,  facecolor='w', edgecolor='k')
+  plt.subplot(211)
+  plt.plot(time1_sim*1e9,Ey_sim, label="Ey = EW")
+  plt.plot(time1_sim*1e9,Ex_sim, label="Ex = NS")
+  plt.plot(time1_sim*1e9,Ez_sim, label="Ez = UP")
+  plt.xlabel('Time [nsec]')
+  plt.ylabel('Electric field [muV/m]')
+  plt.legend(loc='best')
+  plt.subplot(212)
+  plt.plot(timeEW*1e9,voltage_EW, label="EW")
+  plt.plot(timeNS*1e9,voltage_NS, label="NS")
+  plt.xlabel('Time [nsec]')
+  plt.ylabel('Voltage [muV]')
+  plt.legend(loc='best')
 
-###plots
-
-
-plt.figure(1,  facecolor='w', edgecolor='k')
-plt.subplot(211)
-plt.plot(time1_sim*1e9,Ex_sim, label="Ex = EW")
-plt.plot(time1_sim*1e9,Ey_sim, label="Ey = NS")
-plt.plot(time1_sim*1e9,Ez_sim, label="Ez = UP")
-plt.xlabel('Time [nsec]')
-plt.ylabel('Electric field [muV/m]')
-plt.legend(loc='best')
-##plt.show()
-plt.subplot(212)
-#plt.ylabel('Etheta [muV]')
-#plt.show()
-plt.plot(timeEW*1e9,voltage_EW, label="EW")
-plt.plot(timeNS*1e9,voltage_NS, label="NS")
-plt.xlabel('Time [nsec]')
-plt.ylabel('Voltage [muV]')
-plt.legend(loc='best')
-
-plt.show()
-#'''
+  plt.show()

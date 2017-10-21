@@ -1,12 +1,18 @@
 \documentclass[12pt]{article}
 \usepackage{color}
-\usepackage{graphicx}
+\usepackage{authblk}
+\usepackage{graphicx} 
+\usepackage{amsmath} 
 \usepackage[top=2cm,bottom=2.5cm, inner=1.5cm,outer=1.5cm,twoside,a4paper]{geometry}
 
 \newcommand*{\courierfont}{\fontfamily{pcr}\selectfont}
 
-\begin{document}
+\title{Angular conventions in the GRAND simulation framework}
+\author{GRANDsimu team~: Valentin Decoene, Sandra Le Coz, Olivier Martineau-Huynh, Valentin Niess, Nicolas Renault-Tinacci, Matias Tueros, Anne Zilles}
+\date{\today}
 
+\begin{document}
+\maketitle
 \section{Introduction}
 Several different tools are used in the GRAND simulation chain~: DANTON down to tau decay, then ZHAireS or RadioMorphing down to electric field computation, and finaly NEC for antenna response computation. Unfortunately, those building blocks do not necessary use the same referential and angular conventions. In this document we detail these conventions and what functions should be called at the interfaces so that conversions are properly handled.
 
@@ -37,14 +43,32 @@ This applies in particular to the antenna positions and the electric field vecto
 {\bf Add something about ZHAireS inputs and scripts to call them.}
 
 \section{NEC}\label{sec:nec}
-The antenna response to radio waves is computed in the {\courierfont get\_voltage()} function of the {\courierfont computevoltage.py} script. Azimuth and zenith angle are handed to {\courierfont get\_voltage()} in GRAND conventions but are internaly converted in NEC conventions, where x-axis point towards East, y-axis towards North and z-axis points Up. Azimuth angle $\phi$ is measured w.r.t. the x-axis, zenith $\theta$ w.r.t. to z-axis but using cosmic-ray conventions ($\theta<90^{\circ}$ for a shower flying downward). Consequently following conversions formulas are applied between GRAND and NEC referentials~:
-\[\phi_{response}=\phi_{GRAND}+90^\circ\] an
-\[\theta_{response}= 180^\circ-\theta_{GRAND}\] 
+The antenna response to radio waves is computed in the {\courierfont get\_voltage()} function of the {\courierfont computevoltage.py} script. Azimuth and zenith angle are handed to {\courierfont get\_voltage()} in GRAND conventions but are internaly converted in NEC conventions, where $\vec{e_x}$ points towards East, $\vec{e_y}$ towards North and $\vec{e_z}$ Up (see Fig. ref{fig:necref}). Azimuth angle $\phi$ is measured w.r.t. the x-axis, zenith $\theta$ w.r.t. to z-axis but using cosmic-ray conventions ($\theta<90^{\circ}$ for a shower flying downward). Consequently following conversions formulas are applied between GRAND and NEC referentials~:
+\[\phi_{NEC}=\phi_{GRAND}+90^\circ\] and
+\[\theta_{NEC}= 180^\circ-\theta_{GRAND}\] 
 These formulas are directly implemented in the {\courierfont GRANDtoNEC()} function in {\courierfont computevoltage.py}.
-Note also that inside {\courierfont get\_voltage()} a {\it local referential} ($\vec{e_r},\vec{e_\phi},\vec{e_\theta}$) is used, where $\vec{e_r}$ is a radial vector parallel to the wave propagation axis and pointing to the antenna, and ($\vec{e_\phi},\vec{e_\theta}$) define the E-field plane with $\vec{e_\phi}$ such as $\vec{e_\phi}\cdot\vec{e_z}=0$.
-Following forumals are therefore used to compute the E-field componants in the ($\vec{e_r},\vec{e_\phi},\vec{e_\theta}$) referential~: \\
-\[E_r(t)=0 \] (following the plane wave approcimation)
-\[E_\theta = \cos\theta_{NEC}(\cos\phi_{NEC} E_{yGRAND} - \sin\phi_{NEC}E_{xGRAND})-\sin\theta_{NEC}E_{zGRAND} \] 
-\[E_\phi = -\sin\phi_{NEC}E_{yGRAND}-\cos\phi_{NEC}E_{xGRAND} \]
+Note also that inside {\courierfont get\_voltage()} a {\it local spherical referential} ($\vec{e_r},\vec{e_\theta},\vec{e_\phi}$) is used, where $\vec{e_r}$ is a radial vector pointing to the direction of origin of the wave, and ($\vec{e_\theta},\vec{e_\phi}$) a direct base in the E-field plane with $\vec{e_\phi}$ such that $\vec{e_\phi}\cdot\vec{e_z}=0$~:
+
+\begin{equation}
+  \left\{
+      \begin{aligned}
+        \vec{e_r} = \sin\theta_{NEC}\cos\phi_{NEC}\vec{e_x}+\sin\theta_{NEC}\sin\phi_{NEC}\vec{e_y}+\cos\theta_{NEC}\vec{e_z} \\
+	\vec{e_\theta} = \cos\theta_{NEC}\cos\phi_{NEC}\vec{e_x}+\cos\theta_{NEC}\sin\phi_{NEC}\vec{e_y}-\sin\theta_{NEC}\vec{e_z} \\
+	\vec{e_\phi} = \sin\phi_{NEC}\vec{e_x}+\cos\phi_{NEC}\vec{e_y} \\  
+      \end{aligned}
+    \right.
+\end{equation}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{NECreferential.png} 
+\caption{\label{fig:necref} Sketch showing the NEC coordinate system. The vector $\vec{k}$ is the vector of propagation of the wave. Taken from {\it TREND antenna response computation} by S. le Coz \& V. Niess {\bf To be put on the Twiki}}
+\end{figure} 
+
+Taking into account the different definitions of referentials between GRAND and NEC, following formulas are therefore used in {\courierfont computevoltage.py} to compute the E-field componants in the ($\vec{e_r},\vec{e_\phi},\vec{e_\theta}$) referential~: \\
+
+\[E_r(t)=0 \] (following the plane wave approximation)
+\[E_\theta(t) = \cos\theta_{NEC}(\cos\phi_{NEC} E_y^{GRAND} - \sin\phi_{NEC}E_x^{GRAND})-\sin\theta_{NEC}E_z^{GRAND} \] 
+\[E_\phi(t) = -\sin\phi_{NEC}E_y^{GRAND}-\cos\phi_{NEC}E_x^{GRAND} \]
 
 \end{document}

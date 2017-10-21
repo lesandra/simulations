@@ -7,21 +7,26 @@ import linecache
 from scipy.fftpack import rfft, irfft, rfftfreq
 from scipy.interpolate import interp1d
 
-
+#===========================================================================================================
+def GRANDtoNEC(zenith=None, azimuth =None):
+#===========================================================================================================
+    zen = (180-zenith)
+    azim = azimuth + 90 # az_ant=az_GRAND +90deg
+    if azim>360:
+      azim = azim-360
+    
+    return [zen,azim]
 
 ### efield in V/m,azimuth, zenith and alpha in deg, time in s # # # EW=1: EW file, EW=0: NS file
 #===========================================================================================================
 def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None, EW=1):
 #===========================================================================================================
-    # Note: azim & zenith are in NEC conventions (x=WE, y=SN, z= Up, azim clockwise from x, theta<90deg downward)
+    # Note: azim & zenith are in GRAND conventions
 
-    
-    zen = (180-zenith)*pi/180
-    azim = azimuth + 90 # az_ant=az_GRAND +90deg
-    if azim>360:
-      azim = azim-360
+    zen, azim = GRANDtoNEC(zenith,azimuth)
+    print 'get_voltage: computing antenna response for wave with zenith=',zen,'deg, azimuth=',azim,'deg (**NEC conventions**).'
+    zen = zen*pi/180
     azim = azim*pi/180;
-    print 'get_voltage: computing antenna response for wave with zenith=',zen*180/pi,'deg, azimuth=',azim*180/pi,'deg (**NEC conventions**).'
     delt = time1[1]-time1[0];
     Fs = 1/delt   
     time_off=time1[0] # time offset, to get absolute time

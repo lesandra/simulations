@@ -8,51 +8,6 @@ from scipy.fftpack import rfft, irfft, rfftfreq
 from scipy.interpolate import interp1d
 
 
-#===========================================================================================================
-def effective_zenith(x_ant, y_ant, z_ant, zen, azim, alpha, injectionheight=3000.):
-#===========================================================================================================	
-# Effective zenith (computed in antenna referential, ie theta<90deg <=> downward)
-	zen = zen * np.pi / 180
-	azim = azim * np.pi / 180
-	alpha = alpha * np.pi / 180
-	
-	print 'Effective zenith angle used for calculating the antenna response.'
-	###get the effectiv zenith
-	## find approx. Xmax position
-	# shower direction: where it goes to
-	v = np.array([np.cos(azim)*np.sin(zen), np.sin(azim)*np.sin(zen), np.cos(zen)]) # or *-1: change the direction
-		
-	# vector for zenith=90
-	b = np.array([np.cos(azim), np.sin(azim) ,0.])
-			# projection v onto b
-	v_p= np.linalg.norm(v)* np.cos(0.5*pi-zen) *b/np.linalg.norm(b)
-	v_p= v_p/np.linalg.norm(v_p)
-
-	hor_dist=8000. # approx. horizontal distance from injection point to xmax
-	Inj= np.array([0.,0.,injectionheight])
-	Xmax= Inj + np.array([0,0,1.]) * hor_dist/ np.tan(zen) + hor_dist * v_p
-	#print(v, Xmax)
-	#print ' for x,y, :', v_p*8000.,   'for z:',  8000. / np.tan(zen),  Xmax
-		
-	# antenna position
-	ant= np.array([x_ant, y_ant, z_ant])
-	# unit vetor between xmax and antenna
-	u_xmax=  Xmax - ant
-	u_xmax= u_xmax/np.linalg.norm(u_xmax)
-	#print u_xmax
-		
-	# antenna vector
-	# at the moment slope always facing the shower => azim_ant = 180. -azim, mountain slope alpha works as zenith
-	u_ant= np.array([ np.cos(pi-azim)* np.sin(alpha),  np.sin(pi-azim)* np.sin(alpha), np.cos(alpha)])
-	#print(u_ant)
-		
-	# get effective zenith, the angle between antenna vector and vector between xmax and antenna
-	cos_zen_eff= np.dot(u_xmax, u_ant)
-	zen_eff=  np.arccos(cos_zen_eff)
-	zen_eff = zen_eff*180./pi
-
-	return [zen_eff , Xmax]
-
 
 ### efield in V/m,azimuth, zenith and alpha in deg, time in s # # # EW=1: EW file, EW=0: NS file
 #===========================================================================================================
@@ -60,18 +15,20 @@ def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None
 #===========================================================================================================
     # Note: azim & zenith are in NEC conventions (x=WE, y=SN, z= Up, azim clockwise from x, theta<90deg downward)
 
-    print 'get_voltage: computing antenna response for wave with zenith=',zenith,'deg, azimuth=',azimuth,'deg (**NEC conventions**).'
-    azim=azimuth         
+    
+    zen = (180-zenith)*pi/180
+    azim = azimuth + 90 # az_ant=az_GRAND +90deg
+    if azim>360:
+      azim = azim-360
+    azim = azim*pi/180;
+    print 'get_voltage: computing antenna response for wave with zenith=',zen*180/pi,'deg, azimuth=',azim*180/pi,'deg (**NEC conventions**).'
     delt = time1[1]-time1[0];
     Fs = 1/delt   
     time_off=time1[0] # time offset, to get absolute time
     time1 = (time1-time1[0]) #resetted to zero
     #print 'Efield signal length: ', time1[-1]*1e9 , 'ns.'
 
-    
     ##### efield in antenna frame
-    zen = zenith*pi/180;
-    azim = azim*pi/180;
     szen = np.sin(zen);
     czen = np.cos(zen);
     saz = np.sin(azim);
@@ -246,6 +203,48 @@ def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None
 
 
 #===========================================================================================================
+def effective_zenith(zen, azim, alpha, x_ant, y_ant, z_ant, x_xmax=0, y_xmax=0, z_xmax=3000.):
+#===========================================================================================================	
+# Effective zenith (computed in GRAND conventions, ie theta>90deg <=> downward)
+	zen = zen * np.pi / 180
+	azim = azim * np.pi / 180
+	alpha = alpha * np.pi / 180
+	
+	print 'Now computing effective zenith angle to Xmax from antenna location.'
+	
+	# shower direction: where it goes to
+	v = np.array([np.cos(azim)*np.sin(zen), np.sin(azim)*np.sin(zen), np.cos(zen)]) # or *-1: change the direction
+	# vector for zenith=90
+	b = np.array([np.cos(azim), np.sin(azim) ,0.])
+	# projection v onto b
+	v_p= np.linalg.norm(v)* np.cos(0.5*pi-zen) *b/np.linalg.norm(b)
+	v_p= v_p/np.linalg.norm(v_p)
+
+	
+	Xmax= np.array([x_xmax,y_xmax,z_xmax])
+	print 'Xmax position:',Xmax
+	#print(v, Xmax)
+			
+	ant= np.array([x_ant, y_ant, z_ant])  # antenna position
+	# unit vetor between xmax and antenna
+	u_xmax =  Xmax - ant  
+	u_xmax = u_xmax/np.linalg.norm(u_xmax) 
+	#print u_xmax
+		
+	# antenna vector
+	# at the moment slope always facing the shower => azim_ant = 180. -azim, mountain slope alpha works as zenith
+	u_ant= np.array([ np.cos(pi-azim)* np.sin(alpha),  np.sin(pi-azim)* np.sin(alpha), np.cos(alpha)])
+	#print(u_ant)
+		
+	# get effective zenith, the angle between antenna vector and vector between xmax and antenna
+	cos_zen_eff= np.dot(u_xmax, u_ant)
+	zen_eff=  np.arccos(cos_zen_eff)
+	zen_eff = 180-zen_eff*180./pi
+
+	return zen_eff
+
+
+#===========================================================================================================
 # Compute the time dependent voltage
 #===========================================================================================================
 if __name__ == '__main__':
@@ -294,29 +293,34 @@ if __name__ == '__main__':
 			  numberline = int(l) + 1
 			  line = linecache.getline(path+'/antpos.dat', numberline)
 			  [x_sim, y_sim, z_sim] = map(float, line.split())
-  			  print 'Done. Antenna position at', x_sim, y_sim, z_sim
+  			  print 'Done. Antenna',l,' at position [', x_sim, y_sim, z_sim,'].'
  
   		  except : 
  			  print 'No antenna position file found, please put antpos.dat in', path, 'or enter antenna positions as arguments.'
   			  sys.exit()
-
-  	  [zenith_eff, Xmax] = effective_zenith(x_sim, y_sim, z_sim, zenith_sim, azimuth_sim, alpha_sim)
+          # Then compute Xmax
+	  injection_height = 3000
+	  hor_dist=8000. # approx. horizontal distance from injection point to xmax
+	  print 'Now computing Xmax position from injection height=',injection_height,'m, horizontal distance to Xmax= ',hor_dist,'m and (zen,azim) values.'
+	  caz = np.cos(azimuth_sim*pi/180)
+	  saz = np.sin(azimuth_sim*pi/180)
+	  czen = np.cos(zenith_sim*pi/180)
+	  szen = np.sin(zenith_sim*pi/180) 
+	  Xmax = hor_dist/szen*np.array([caz*szen, saz*szen, czen])+np.array([0,0,injection_height])
+	  print 'Xmax = ',Xmax
+	  # Finally compute effective zenith
+	  zenith_eff = effective_zenith(zenith_sim, azimuth_sim, alpha_sim, x_sim, y_sim, z_sim, Xmax[0], Xmax[1], Xmax[2])
  
   else: # in case effective zenith not wanted, one still has to account for mountain slope and switch to NEC conventions.
-  ## zenith: correct for mountain slope
+          ## zenith: correct for mountain slope
 	  zenith_eff= 180-(zenith_sim+alpha_sim) # Switch to antenna convention
-      ## azimuth: internal conversion from GRAND conventions to antenna response conventions since GRAND North=0deg, antenna EAST=0deg
-  azimuth_sim = azimuth_sim + 90 # az_ant=az_GRAND +90deg
-  if azimuth_sim>360:
-    azimuth_sim = azimuth_sim-360
     
-  print 'Effective zenith (in NEC conventions): ', zenith_eff,' deg.'	  
-  print "Azimuth (in NEC conventions) ", azimuth_sim,' deg.'    
-  if zenith_eff > 90 :
-  	  print ' --- Wave coming from ground (NEC zenith larger than 90deg), antenna response not computed for that angle --- '
+  print 'Effective zenith (in GRAND conventions): ', zenith_eff,' deg.'	  
+  print "Azimuth (in GRAND conventions) ", azimuth_sim,' deg.'    
+  if zenith_eff < 90 :
+  	  print ' --- Wave coming from ground (GRAND zenith smaller than 90deg), antenna response not computed for that angle. Abort --- '
   	  exit()
 
-  
   # Compute the output voltage for EW component
   print '*** Computing EW voltage...'
   voltage_EW, timeEW  = get_voltage( time1=time1_sim,Ex=Ex_sim, Ey=Ey_sim, Ez=Ez_sim, zenith=zenith_eff, azimuth=azimuth_sim, EW=1)
@@ -334,14 +338,14 @@ if __name__ == '__main__':
   plt.plot(time1_sim*1e9,Ey_sim, label="Ey = EW")
   plt.plot(time1_sim*1e9,Ex_sim, label="Ex = NS")
   plt.plot(time1_sim*1e9,Ez_sim, label="Ez = UP")
-  plt.xlabel('Time [nsec]')
-  plt.ylabel('Electric field [muV/m]')
+  plt.xlabel('Time (nsec)')
+  plt.ylabel('Electric field (muV/m)')
   plt.legend(loc='best')
   plt.subplot(212)
   plt.plot(timeEW*1e9,voltage_EW, label="EW")
   plt.plot(timeNS*1e9,voltage_NS, label="NS")
-  plt.xlabel('Time [nsec]')
-  plt.ylabel('Voltage [muV]')
+  plt.xlabel('Time (nsec)')
+  plt.ylabel('Voltage (muV)')
   plt.legend(loc='best')
 
   plt.show()

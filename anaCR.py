@@ -56,18 +56,23 @@ nta = res[:,11]
 #pl.show()
 
 # Compute apperture
-sefft = np.zeros(np.size(eu))
+sefftc = np.zeros(np.size(eu))
+seffta = np.zeros(np.size(eu))
 sefftopt = np.zeros(np.size(eu))
 for i in range(np.size(eu)):
   e = eu[i]
-  seffp = np.zeros(np.size(th))
+  seffpa = np.zeros(np.size(th))
+  seffpc = np.zeros(np.size(th))
   seffpopt = np.zeros(np.size(th))
   for t in range(np.size(th)):
     sel = np.where( (Elog == e) & (theta == th[t]) )
     sphi = sn[sel[0][0]]*200000*4  # GRAND physical area projected along traj  [km2]. Factor 4 comes from try area = 0.25km^2.
-    ok = np.logical_or(newa[sel]>=nantmin,nnsa[sel]>=nantmin) 
-    r = float(np.sum(ok))/np.size(ok)
-    seffp[t] = 2*pi*sphi*r   # Effective area integrated over phi
+    oka = np.logical_or(newa[sel]>=nantmin,nnsa[sel]>=nantmin) 
+    okc = np.logical_or(newc[sel]>=nantmin,nnsc[sel]>=nantmin) 
+    ra = float(np.sum(oka))/np.size(oka)
+    rc = float(np.sum(okc))/np.size(okc)
+    seffpa[t] = 2*pi*sphi*ra   # Effective area integrated over phi
+    seffpc[t] = 2*pi*sphi*rc   # Effective area integrated over phi
     seffpopt[t] = 2*pi*sphi
     #print '\n##E = 10^',e,',eV, theta = ',th[t],'deg:'
     #print 'Sphi =',sphi,'km^2'
@@ -77,28 +82,41 @@ for i in range(np.size(eu)):
     #print ok
     #print 'Effective area',seffp[t],'km^2'
   print '\n##E = 10^',e,'eV'
-  print seffp  
-  sefft[i] = np.trapz(seffp*np.sin(th*pi/180),th*pi/180)
+  print seffpa
+  print seffpc
+    
+  seffta[i] = np.trapz(seffpa*np.sin(th*pi/180),th*pi/180)
+  sefftc[i] = np.trapz(seffpc*np.sin(th*pi/180),th*pi/180)
   sefftopt[i] = np.trapz(seffpopt*np.sin(th*pi/180),th*pi/180)
   
 ## Compute event rate
 print ''
 ee = pow(10,eu)
 print 'Energy:',ee,'eV'
-print 'Apperture:',sefft,'km2.sr'
+print 'Apperture (agressive):',seffta,'km2.sr'
+print 'Apperture (conservative):',sefftc,'km2.sr'
 print 'Optimal apperture:',sefftopt[0],'km2.sr'
-sefft = sefft*1e6  #m2
+pl.figure(2)
+pl.plot(eu,seffta,label='Agressive')
+pl.plot(eu,sefftc,label='Conservative')
+pl.plot(eu,sefftopt,label='Optimal')
+pl.xlabel('Energy (eV)')
+pl.ylabel('Apperture (km$^2$.sr)')
+pl.grid(True)
+pl.legend(loc='best')
+pl.title("GRAND CR apperture")
+pl.show() 
+
+seffta = seffta*1e6  #m2
+sefftc = sefftc*1e6  #m2
 sefftopt = sefftopt*1e6  #m2
 dt = 3600*24*ndays  #1 day
-evt1d = np.trapz(sefft*J1*pow(ee,-gamma1)*dt,ee)
+evt1da = np.trapz(seffta*J1*pow(ee,-gamma1)*dt,ee)
+evt1dc = np.trapz(sefftc*J1*pow(ee,-gamma1)*dt,ee)
 evt1dopt = np.trapz(sefftopt*J1*pow(ee,-gamma1)*dt,ee)
-print 'Expected daily event rate in 10^17-10^18eV:',evt1d
+print 'Expected daily event rate in 10^17-10^18eV (agressive):',evt1da
+print 'Expected daily event rate in 10^17-10^18eV (conservative):',evt1dc
 print 'Optimal daily event rate in 10^17-10^18eV:',evt1dopt
-#pl.figure(2)
-#pl.plot(eu,sefft)
-#pl.plot(eu,sefftopt)
-#pl.grid(True)
-#pl.show() 
 
 # HE events
 e2 = [pow(10,float(x)/10) for x in range(190,200)]
@@ -112,10 +130,13 @@ sefft = np.zeros(np.size(th))
 for t in range(np.size(th)):
   sel = np.where( (theta == th[t]) )
   sphi = sn[sel[0][0]]*200000*4  # GRAND physical area projected along traj  [km2]. Factor 4 comes from try area = 0.25km^2.
-  ok = np.logical_or(newa[sel]>=nantmin,nnsa[sel]>=nantmin) 
+  oka = np.logical_or(newa[sel]>=nantmin,nnsa[sel]>=nantmin) 
+  okc = np.logical_or(newc[sel]>=nantmin,nnsc[sel]>=nantmin) 
   # Warning: here all E count the same <=> assuming flat spectrum
-  r = float(np.sum(ok))/np.size(ok)
-  sefft[t] = 2*pi*sphi*r   # Effective area integrated over phi
+  ra = float(np.sum(oka))/np.size(oka)
+  rc = float(np.sum(okc))/np.size(okc)
+  seffta[t] = 2*pi*sphi*ra   # Effective area integrated over phi
+  sefftc[t] = 2*pi*sphi*rc
   #print '\n##E = 10^',e,',eV, theta = ',th[t],'deg:'
   #print 'Sphi =',sphi,'km^2'
   #print 'phi=',phi[sel]
@@ -125,11 +146,15 @@ for t in range(np.size(th)):
   #print 'Effective area',seffp[t],'km^2'
 
 print '\n##theta =', th,'deg'
-print 'Apperture (km^2.sr):',sefft
+print 'Apperture (agressive):',seffta,'km^2.sr'
+print 'Apperture (conservative):',sefftc,'km^2.sr'
+
 pl.figure(3)
-pl.plot(th,sefft)
+pl.plot(th,seffta,label='Agressive')
+pl.plot(th,sefftc,label='Conservative')
 pl.xlabel('Zenith angle (deg)')
 pl.ylabel('Apperture (km$^2$.sr)')
-pl.title("GRAND apperture (for a flat spectrum)")
+pl.title("GRAND CR apperture (for a flat spectrum)")
 pl.grid(True)
+pl.legend(loc='best')
 pl.show()

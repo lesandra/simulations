@@ -1,7 +1,20 @@
 #!/bin/bash
 
-#### TODO to be substituted by script reading in DANTON files
-#
+# #### TODO to be substituted by script reading in DANTON files, as soon as I know how the file looks like, include that:
+# targetfile=testreadin.dat ### file containing output information from DANTON as input for radio morphing
+# # echo "$myfile" 
+# 
+# while IFS=$'\t' read -r -a myArray|| [ -n "$myArray" ]; do
+#    
+#     primary=${myArray[0]}
+#     E=${myArray[1]}
+#     zen=${myArray[2]}
+#     echo "${primary}"
+#     echo "${E}"
+#     echo "${zen}"
+#    done < $targetfile
+
+
 # parameters of target shower: AzimuthScan4_26
 E=0.96 #in EeV 
 injh=2000 # in m above ground

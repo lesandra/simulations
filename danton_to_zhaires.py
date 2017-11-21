@@ -181,11 +181,23 @@ def array_display(ANTENNAS=None,datamap=None,title=None):
     return
 
 ##########################################################################################################
-def GRANDtoZHAires(zen_GRAND=None, azim_GRAND=0):
-    """ Convert coordinates from GRAND convention to ZHAires convention """
+def DANTONtoZHAires(zen_DANTON=None, azim_DANTON=0):
+    """ Convert coordinates from DANTON convention to ZHAires convention """
 
-    zen = (180.-zen_GRAND)
-    azim = azim_GRAND - 180.
+    zen = (180.-zen_DANTON)
+    azim = azim_DANTON - 180.
+    if azim>360:
+      azim = azim-360.
+    elif azim<0.:
+        azim = azim+360.
+    return [zen,azim]
+
+##########################################################################################################
+def DANTONtoGRAND(zen_DANTON=None, azim_DANTON=0):
+    """ Convert coordinates from DANTON convention to ZHAires convention """
+
+    zen = zen_DANTON
+    azim = azim_DANTON
     if azim>360:
       azim = azim-360.
     elif azim<0.:
@@ -333,7 +345,7 @@ def parse_build(event=None,decay=None,AZIMUTH=0.):
     depth = danton.EARTH_RADIUS - np.linalg.norm(r1)
     height = R2 - danton.EARTH_RADIUS 
     theta_danton = np.degrees(np.arccos(np.dot(u2, r2) / R2))
-    theta, azim = GRANDtoZHAires(theta_danton,azim_i)
+    theta, azim = DANTONtoZHAires(theta_danton,azim_i)
               
     dataprod = []
     et=0.0 #in GeV
@@ -344,7 +356,7 @@ def parse_build(event=None,decay=None,AZIMUTH=0.):
         et=et+ep #in GeV
         up=pp/ep
         thetap_danton=np.degrees(np.arccos(np.dot(up, r2) / R2))
-        thetap, azim = GRANDtoZHAires(thetap_danton,azim_i)
+        thetap, azim = DANTONtoZHAires(thetap_danton,azim_i)
         dataprod.append((event.id,idp,up[0],up[1],up[2],ep,thetap,theta,azim,height,depth,event.primary.energy,
             decay.tau_f.energy))
     dataprod = np.array(dataprod)

@@ -245,7 +245,7 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
     
     ### angles target shower #NOTE before I just zen1 and zen2 -- v for backtrafo to xyz
     v2 = np.array([np.cos(az2)*np.sin(zen2)*-1.,np.sin(az2)*np.sin(zen2)*-1.,np.cos(zen2)*-1.]) # or *-1: change the direction
-    v2=v/np.linalg.norm(v2)
+    v2=v2/np.linalg.norm(v2)
     #print v
     vxB2 = np.cross(v2,B) #np.array([v[1]*B[2]-v[2]*B[1],v[2]*B[0]-v[0]*B[2],v[0]*B[1]-v[1]*B[0]]) # crossproduct
     vxB2 = vxB/np.linalg.norm(vxB2)
@@ -342,8 +342,8 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
     decay=np.array([0.,0.,injh2]) # ==: decay position as defined in zhaires sim, from DANTOn files
         
     # new position vector:
-    x2= decay + v2 * (Xmax_distance+ dist1)
-    #print 'position Xmax: ', x2,' position decay: ', decay, ' shower direction: ', v2
+    x2= decay - v2 * (Xmax_distance+ dist1) # to account for going from Zhaires to GRAND conv
+
     
  ##############################   Backtrafo to XYZ
     ### Now the new 'stretched' positions are calculated in the xyz components, backrotation
@@ -353,10 +353,12 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
     for m in range(0, len(pos[:,1])):
         stretch2[m,:] = GetXYZ(pos[m],x2[0],x2[1],x2[2],zen2, az2,phigeo,thetageo)  
     #stretch2[l]  # the new wanted antenna position after stretching   
-    
 
+    if l==0:
+        print 'position ref to Xmax: ', x2,' position decay: ', decay, ' shower direction: ', v2, ' distance to Xmax: ', dist1, ' distance between Xmax and plane: ', Xmax_distance
+        print len(x2), l, len(stretch2), 
     
-        
+    print     stretch2[l]
     
     
     #print ' scaling done , positions ', stretch2[l]
@@ -514,7 +516,12 @@ for l in np.arange(start,end):#0,120-1):
 # save as well the posiion file somewhere if you scale the complete star shape pattern
 posfile_new = directory  +'/antpos.dat' 
 
-pylab.savetxt(posfile_new, (positions), fmt='%1.3e')
+#pylab.savetxt(posfile_new, (positions), fmt='%1.3e')
+
+file_ant=open(posfile_new, 'w')
+for i in range( 0, len(positions) ):
+        print >>file_ant,"%.3f	%.3f	%.3f" % (positions.T[0,i], positions.T[1,i],positions.T[2,i] )
+file_ant.close()
 
 print len(positions), ' antennas scaled' 
 print 'antenna positions save in: /../scaled_'+str(sys.argv[2])+'/scaled_antpos.dat'    

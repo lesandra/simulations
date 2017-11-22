@@ -67,20 +67,26 @@ def GetUVW(pos, cx, cy, cz, zen, az, phigeo, bfieldangle):
 def GetXYZ(pos1, cx, cy, cz, zen, az, phigeo, bfieldangle):
    inc=bfieldangle #magnetic field direction    
    
-
+   ## back trafo into Aires conv for rotation
+   #zen=np.pi- zen
+   #az=np.pi+ az
    
    B = np.array([np.cos(phigeo)*np.sin(inc), np.sin(phigeo)*np.sin(inc),np.cos(inc)]) #from oliviers script including phigeo
    B=B/np.linalg.norm(B)
    v = np.array([np.cos(az)*np.sin(zen)*-1.,np.sin(az)*np.sin(zen)*-1.,np.cos(zen)*-1.]) # or *-1: change the direction
+
    v=v/np.linalg.norm(v)
    #print v
    vxB = np.cross(v,B) #np.array([v[1]*B[2]-v[2]*B[1],v[2]*B[0]-v[0]*B[2],v[0]*B[1]-v[1]*B[0]]) # crossproduct
    vxB = vxB/np.linalg.norm(vxB)
    vxvxB = np.cross(v,vxB) #np.array([v[1]*vxB[2]-v[2]*vxB[1],v[2]*vxB[0]-v[0]*vxB[2],v[0]*vxB[1]-v[1]*vxB[0]])# crossproduct
    vxvxB = vxvxB/np.linalg.norm(vxvxB)
-   relpos=np.array([pos1[2], pos1[0], pos1[1]])
-   relpos2=np.array([np.dot(v,relpos),np.dot(vxB,relpos),np.dot(vxvxB,relpos)]).T # vector dot
+   
+   #### back to xyz coordinates
+   #relpos2=np.array([np.dot(v,relpos),np.dot(vxB,relpos),np.dot(vxvxB,relpos)])# vector dot. T doesnt change anything since just one line
+   relpos2=pos1[0]*v + pos1[1]*vxB + pos1[2]*vxvxB# vector dot. T doesnt change anything since just one line  
    pos=relpos2 +np.array([cx,cy,cz])#np.array([relpos2[2], relpos2[0], relpos[1]])# NOTE: first error
+   
    return pos
 
 def mag(x):
@@ -158,10 +164,10 @@ def scalingfactors(E1, az1, zen1, injh1, E2, az2, zen2, injh2, thetageo):
     ############## Azimuth scaling    
     #% Azimuth 
     Bgeo = [np.sin(thetageo), 0, np.cos(thetageo)]#  % With North = magnetic North
-    vref = [np.cos(az1)*np.sin(zen1)*-1., np.sin(az1)*np.sin(zen1)*-1., np.cos(zen1)*-1.] 
+    vref = [np.cos(az1)*np.sin(zen1)*-1., np.sin(az1)*np.sin(zen1)*-1., np.cos(zen1)*-1.]# *-1: account for angle conventions 
     vxB_ref = np.cross(vref,Bgeo)
     vxB_ref = mag(vxB_ref)/(mag(vref)*mag(Bgeo))
-    v = [np.cos(az2)*np.sin(zen2)*-1., np.sin(az2)*np.sin(zen2)*-1., np.cos(zen2)*-1.]
+    v = [np.cos(az2)*np.sin(zen2)*-1., np.sin(az2)*np.sin(zen2)*-1., np.cos(zen2)*-1.]# *-1: account for angle conventions
     vxB = np.cross(v,Bgeo)
     vxB = mag(vxB)/(mag(v)*mag(Bgeo))
     kAz = vxB/vxB_ref   # =cos(az2)/cos(az1)
@@ -212,7 +218,7 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
     inc=thetageo
     B = np.array([np.cos(phigeo)*np.sin(inc), np.sin(phigeo)*np.sin(inc),np.cos(inc)]) #from oliviers script including phigeo
     B=B/np.linalg.norm(B)
-    v = np.array([np.cos(az1)*np.sin(zen1)*-1.,np.sin(az1)*np.sin(zen1)*-1.,np.cos(zen1)*-1.]) # or *-1: change the direction
+    v = np.array([np.cos(az1)*np.sin(zen1)*-1.,np.sin(az1)*np.sin(zen1)*-1.,np.cos(zen1)*-1.]) # *-1: account for angle conventions
     v=v/np.linalg.norm(v)
     #print v
     vxB = np.cross(v,B) #np.array([v[1]*B[2]-v[2]*B[1],v[2]*B[0]-v[0]*B[2],v[0]*B[1]-v[1]*B[0]]) # crossproduct
@@ -243,14 +249,14 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
     EshowerA.T[2]=EshowerA.T[2]*kE*    kHeight
     
     
-    ### angles target shower #NOTE before I just zen1 and zen2 -- v for backtrafo to xyz
-    v2 = np.array([np.cos(az2)*np.sin(zen2)*-1.,np.sin(az2)*np.sin(zen2)*-1.,np.cos(zen2)*-1.]) # or *-1: change the direction
+    ### angles target shower 
+    v2 = np.array([np.cos(az2)*np.sin(zen2)*-1.,np.sin(az2)*np.sin(zen2)*-1.,np.cos(zen2)*-1.]) # *-1: account for angle conventions
     v2=v2/np.linalg.norm(v2)
     #print v
     vxB2 = np.cross(v2,B) #np.array([v[1]*B[2]-v[2]*B[1],v[2]*B[0]-v[0]*B[2],v[0]*B[1]-v[1]*B[0]]) # crossproduct
-    vxB2 = vxB/np.linalg.norm(vxB2)
+    vxB2 = vxB2/np.linalg.norm(vxB2)
     vxvxB2 = np.cross(v2,vxB2) #np.array([v[1]*vxB[2]-v[2]*vxB[1],v[2]*vxB[0]-v[0]*vxB[2],v[0]*vxB[1]-v[1]*vxB[0]])# crossproduct
-    vxvxB2 = vxvxB/np.linalg.norm(vxvxB2)
+    vxvxB2 = vxvxB2/np.linalg.norm(vxvxB2)
     
     
     #Backtrafo of efield from shower coord (1,2,3) in xyz (4,5,6) after scaling and/or stretching using the target angles        
@@ -358,8 +364,6 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
         print 'position ref to Xmax: ', x2,' position decay: ', decay, ' shower direction: ', v2, ' distance to Xmax: ', dist1, ' distance between Xmax and plane: ', Xmax_distance
         print len(x2), l, len(stretch2), 
     
-    print     stretch2[l]
-    
     
     #print ' scaling done , positions ', stretch2[l]
     return txt1, stretch2[l]
@@ -449,6 +453,8 @@ if start==0:
 posfile = path  +'/antpos.dat' 
 positions=np.genfromtxt(posfile)
 
+pos_new= np.full_like(positions, 0.) #np.array([len(positions), 3])
+
  ################################################################################   
 
 
@@ -463,9 +469,10 @@ for l in np.arange(start,end):#0,120-1):
     txt1=np.genfromtxt(path+'/a'+str(int(l)) +'.trace', skip_footer=2) # the reference trace, scaling done in the funtion -- has to be read in in the scaling and here just for comparison purpose
     
     txt3=np.array(txt1) # will be the scaled shower # to get same structure a = numpy.array(b)
-    txt3, positions[l]= scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phigeo, thetageo, l,  positions, path) # always hand over all need parameters,1 3D pulse, and all antenne positions
+    txt3, pos_new[l,:]= scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phigeo, thetageo, l,  positions, path) # always hand over all need parameters,1 3D pulse, and all antenne positions
  
-    #print 'antenna position in m', positions[l]
+    #print 'antenna position in m', pos_new[l]
+
     
 ######################### 
 
@@ -520,11 +527,11 @@ posfile_new = directory  +'/antpos.dat'
 
 file_ant=open(posfile_new, 'w')
 for i in range( 0, len(positions) ):
-        print >>file_ant,"%.3f	%.3f	%.3f" % (positions.T[0,i], positions.T[1,i],positions.T[2,i] )
+        print >>file_ant,"%.3f	%.3f	%.3f" % (pos_new[i,0], pos_new[i,1],pos_new[i,2] )
 file_ant.close()
 
 print len(positions), ' antennas scaled' 
-print 'antenna positions save in: /../scaled_'+str(sys.argv[2])+'/scaled_antpos.dat'    
+print 'antenna positions save in:', posfile_new
     
 
 

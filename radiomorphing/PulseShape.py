@@ -179,6 +179,7 @@ if SCALED==1:
 #### Finding the Neighbours:  In principal one would like to check which star shape pattern are the closest etc.
 # it reads in all star shape pattern positions from the simulations you hand over via simulations.dat
 positions_sims=np.zeros([len(sims),120,3])
+print("Attention: read-in fixed to 120 antennas max. - to be fixed at some point")
 for i in np.arange(0,len(sims)): # loop over simulated antenna positions
     print sims[i]
     #if i==0: ## Fixed 14.11.2017

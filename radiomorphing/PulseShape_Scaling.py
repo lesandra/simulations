@@ -299,6 +299,7 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
         #print r
         ## get the distance between the antenna
         if mag(pos[6]-pos[5]) != 0.5*mag(pos[7]-pos[5]): # first rings are formed
+            #print ' not equal', mag(pos[6]-pos[5]), 0.5*mag(pos[7]-pos[5])
             #print "ATTENTION: check whether first rings formed or rays if streching is needed"
             r= mag(pos[16]- pos[8])
             step=8
@@ -315,18 +316,23 @@ def scalingpulse(dist1, E1, az1, zen1, injh1, E2, az2, zen2, injh2, primary, phi
         #pos = np.zeros([rings*angles,3])
         
         # first rays are formed
-        for n in range(0, angles): # second rings
-            for m in range(0, rings): #first rays
+        if mag(pos[6]-pos[5]) == 0.5*mag(pos[7]-pos[5]): # first rings are formed
+            for n in range(0, angles): # second rings
+                for m in range(0, rings): #first rays
+                    #if n==0 and m==0:
+                        #print " first rays than rings"
 
-                pos[n*rings+m,1 ]= (m+1)*r* np.cos(n*beta)
-                pos[n*rings+m,2 ]= (m+1)*r* np.sin(n*beta)
-                pos[n*rings+m,0 ]= 0.
-                #if l*angles+ n <8:
-                #print l, n*rings+l,  pos[n*rings+l], pos[n*rings+l]
+                    pos[n*rings+m,1 ]= (m+1)*r* np.cos(n*beta)
+                    pos[n*rings+m,2 ]= (m+1)*r* np.sin(n*beta)
+                    pos[n*rings+m,0 ]= 0.
+                    #if l*angles+ n <8:
+                    #print l, n*rings+l,  pos[n*rings+l], pos[n*rings+l]
         
         if mag(pos[6]-pos[5]) != 0.5*mag(pos[7]-pos[5]): # first rings are formed
                 for m in range(0, rings): #sencond rays
                     for n in range(0, angles): # first rings
+                        #if n==0 and m==0:
+                            #print " first rings than rays"
 
                         pos[m*angles+n,1 ]= (m+1)*r* np.cos(n*beta) # vxB
                         pos[m*angles+n,2 ]= (m+1)*r* np.sin(n*beta) # vxvxB

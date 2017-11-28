@@ -62,7 +62,7 @@ def GetUVW(pos, cx, cy, cz, zen, az, phigeo, bfieldangle):
    vxvxB = np.cross(v,vxB) #np.array([v[1]*vxB[2]-v[2]*vxB[1],v[2]*vxB[0]-v[0]*vxB[2],v[0]*vxB[1]-v[1]*vxB[0]])# crossproduct
    vxvxB = vxvxB/np.linalg.norm(vxvxB)
 
-   return np.array([np.dot(vxB,relpos),np.dot(vxvxB,relpos),np.dot(v,relpos)]).T # vector dot
+   return np.array([np.dot(v,relpos),np.dot(vxB,relpos),np.dot(vxvxB,relpos)]).T # vector dot
 
 def GetXYZ(pos1, cx, cy, cz, zen, az, phigeo, bfieldangle):
    inc=bfieldangle #magnetic field direction    

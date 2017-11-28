@@ -21,6 +21,7 @@
 
 import numpy
 from scipy import signal
+from PulseShape.utils import getn
 #from scipy.signal import butter, lfilter
 #from scipy.signal import blackman,bartlett, hamming, hanning, kaiser
 #from scipy.signal import hilbert
@@ -55,17 +56,7 @@ def rfftfreq(n, d=1.0, nyquist_domain=1):
 		f += (nyquist_domain-1)*fmax
 	return f
 
-
-def mag(x):
-    #return numpy.sqrt(x.dot(x))
-    return numpy.linalg.norm(x) #numpy.abs(x)
-
-
 ####################################
-def getn(h):
-    n = 1.+325.e-6*numpy.exp(-0.1218*h*1e-3)
-    return n
-
 
 def unwrap(phi, ontrue=None):
     """Unwrap the phase to a strictly decreasing function.
@@ -101,31 +92,35 @@ def Interpolate_PulseShape(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=True
 
 
     #### calculating weights: should be done with the xyz coordinates
-    #weight1= mag(x2-xdes)/mag(x2-x1)#0.5 #
-    #weight2= mag(xdes-x1)/mag(x2-x1)#0.5 #
+    #weight1= numpy.linalg.norm(x2-xdes)/numpy.linalg.norm(x2-x1)#0.5 #
+    #weight2= numpy.linalg.norm(xdes-x1)/numpy.linalg.norm(x2-x1)#0.5 #
     #since in star shape pattern it is mor a radial function connection the poistion of same signal as linear go for that solution.
     #if lines ar on a line, it will give the same result as before
-    weight1= mag(x2-xdes)/(mag(x2-xdes) + mag(xdes-x1))#0.5 #
-    weight2= mag(xdes-x1)/(mag(x2-xdes) + mag(xdes-x1))#0.5 #
+    tmp1 = numpy.linalg.norm(x2 - xdes)
+    tmp2 = numpy.linalg.norm(x1 - xdes)
+    tmp = 1. / (tmp1 + tmp2)
+    weight1 = tmp2 * tmp
+    weight2 = tmp1 * tmp
 
     if numpy.isinf(weight1):
         print "weight = inf"
         print x1, x2, xdes
         weight1 = 1.
         weight2 = 0.
-    if weight1 != weight1:
+    if numpy.isnan(weight1):
         print 'Attention: projected positions equivalent'
         weight1 = 1.
         weight2 = 0.
-    if weight1 > 1. or weight2>1:
-        #print 'x1, x2, xdes, mag(x2-x1), mag(x2-xdes), mag(xdes-x1)'
-        print "weight larger 1: ", weight1, weight2, x1, x2, xdes, mag(x2-x1), mag(x2-xdes), mag(xdes-x1)
+    epsilon = numpy.finfo(float).eps
+    if (weight1 > 1. + epsilon) or (weight2 > 1 + epsilon):
+        #print 'x1, x2, xdes, numpy.linalg.norm(x2-x1), numpy.linalg.norm(x2-xdes), numpy.linalg.norm(xdes-x1)'
+        print "weight larger 1: ", weight1, weight2, x1, x2, xdes, numpy.linalg.norm(x2-x1), numpy.linalg.norm(x2-xdes), numpy.linalg.norm(xdes-x1)
         #stop
-    if weight1 + weight2 >1:
+    if weight1 + weight2 > 1 + epsilon:
         print "PulseShape_Interpolation.py: order in simulated positions. Check whether ring or ray structure formed first"
         print weight1, weight2, weight1 + weight2
 
-    #print "weights " ,weight1,weight2 #, ", positions: ", x1, x2, xdes, " distances: ", mag(x2-xdes),  mag(xdes-x1), mag(x2-x1)
+    #print "weights " ,weight1,weight2 #, ", positions: ", x1, x2, xdes, " distances: ", numpy.linalg.norm(x2-xdes),  numpy.linalg.norm(xdes-x1), numpy.linalg.norm(x2-x1)
 
     # get refractive indey at the antenna positions
     n1 =getn(x1[2])
@@ -228,9 +223,9 @@ def Interpolate_PulseShape(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=True
 
 
     # TODO: correct for phase shift from phase gradient using index_1 and index_des: xnew= xnew- abs(index_des-index_1)* binning
-    if mag(x1-xdes) >200.:
+    if numpy.linalg.norm(x1-xdes) >200.:
         #print "another dirty hack for time shifting instead of using phase gradient (doesnt work for this large distances in between antennas)"
-        timeshift= mag(x1-xdes) * n1 / c # in ns
+        timeshift= numpy.linalg.norm(x1-xdes) * n1 / c # in ns
         xnew= xnew +timeshift*1e-9 + (xnew[index_des] - xnew[index_1])
 
         #print 'timeshift', timeshift*1e-9 , xnew[index_des], xnew[index_1], (xnew[index_des] - xnew[index_1])

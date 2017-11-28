@@ -22,7 +22,9 @@ import sys
 from sys import argv
 import re
 import numpy as np
-import PulseShape_Interpolation as pulse
+import PulseShape.interpolation as pulse
+from PulseShape.frame import UVWGetter
+from PulseShape.utils import getCerenkovAngle, load_trace
 
 #from scipy import signal
 #from scipy.signal import hilbert #comment in if needed
@@ -32,7 +34,10 @@ import PulseShape_Interpolation as pulse
 def ProjectPointOnLine(a, b, p):
     ap = p-a
     ab = b-a
-    point = a + np.dot(ap,ab)/np.dot(ab,ab) * ab
+    nrm = np.dot(ab,ab)
+    if nrm <= 0.:
+        print a, b
+    point = a + np.dot(ap,ab) / nrm * ab
     return point
 
 def ProjectPointOnPlane(a,b,d, p):
@@ -41,34 +46,6 @@ def ProjectPointOnPlane(a,b,d, p):
     t= (np.dot(d,n)-np.dot(p,n))/np.dot(n,n)
     point= p+ t*n
     return point
-
-def getCerenkovAngle(h):
-   #% h in meters
-   n = 1.+325.e-6*np.exp(-0.1218*h*1e-3)#;  % Refractive index Zhaires (see email M. Tueros 25/11/2016)
-   alphac = np.arccos(1./n);
-   return alphac
-
-def UVWGetter(cx, cy, cz, zen, az, phigeo, bfieldangle):
-    """Closure for getting coordinates in the local frame.
-    """
-    inc = bfieldangle
-    B = np.array([np.cos(phigeo) * np.sin(inc),
-                  np.sin(phigeo) * np.sin(inc),
-                  np.cos(inc)]) #from oliviers script including phigeo
-    v = np.array([np.cos(az) * np.sin(zen) * -1.,
-                  np.sin(az) * np.sin(zen) * -1.,
-                  np.cos(zen) * -1.]) # or *-1: change the direction
-    vxB = np.cross(v, B)
-    vxB /= np.linalg.norm(vxB)
-    vxvxB = np.cross(v, vxB)
-    origin = np.array((cx, cy, cz))
-
-    def GetUVW(pos):
-       relpos = pos - origin
-       return np.array((np.inner(v, relpos), np.inner(vxB, relpos),
-                        np.inner(vxvxB, relpos))).T
-    return GetUVW
-
 
 DISPLAY=0
 SCALED=1 # scaled traces shall be read in
@@ -184,7 +161,7 @@ if DISPLAY==1:
 
 #ATTENTION herethere should go a LOOP over b over desired antenna position in the list and find always the closest neighbours and get the interpolated pulse shape
 
-for b in range(len(positions)):
+for b in xrange(len(positions)):
     print "##############  begin of interpolation at desired position ", b, ' at ',  positions[b]
 
 
@@ -192,41 +169,35 @@ for b in range(len(positions)):
     # then one can check in between which planes the points is by choosing the two smallest distances
 
     # first find the two planes which are the closest
-    dist_plane=np.zeros([len(sims)])  # 1dim distance array
-    dist_value=np.zeros([len(sims)])  # 1dim distance array
-    for i in np.arange(0,len(sims)):
-
-        PointPrime=ProjectPointOnPlane(positions_sims[i,10]-positions_sims[i,11], positions_sims[i,40]-positions_sims[i,41], positions_sims[i,1], positions[b])
-        #print positions_sims[i,10]-positions_sims[i,11], positions_sims[i,12]-positions_sims[i,20]
-
-        dist_plane[i] = np.linalg.norm(positions[b]-PointPrime)
-        dist_value[i] = np.linalg.norm(positions[b]-PointPrime)
-
-    dist_plane= np.argsort(dist_plane)# sort distances from min to max value and save the id
-    # The closest planes are planes:
-
+    dist_value = np.zeros(len(sims))  # 1dim distance array
+    for i in xrange(len(sims)):
+        PointPrime=ProjectPointOnPlane(
+            positions_sims[i,10] - positions_sims[i,11],
+            positions_sims[i,40] - positions_sims[i,41],
+            positions_sims[i,1], positions[b])
+        dist_value[i] = np.linalg.norm(positions[b] - PointPrime)
+    dist_plane = np.argsort(dist_value)# sort distances from min to max value and save the id
 
     if DISPLAY==1:
         print 'nearest neighbour planes found'
         print dist_plane[0], dist_plane[1]
 
 
-    #### reconstruct a lien between desired position and Xmax
-    # since xmax positions is not given in coordinates you reconstruct its positions by defining aline from a plane and this line has a length of the given distance of the simulated plane to Xmax: dist1 which is the distance of the first plane in the simulations file
+    #### reconstruct a link between desired position and Xmax
+    # since xmax positions is not given in coordinates you reconstruct its
+    # positions by defining a line from a plane and this line has a length of
+    # the given distance of the simulated plane to Xmax: dist1 which is the
+    # distance of the first plane in the simulations file
     # dist1 belongs to positions_sims[0,:], normal should always be the same
 
 
-    #n= np.cross(positions_sims[0,10]-positions_sims[0,11], positions_sims[0,40]-positions_sims[0,41])
-    #n= n/np.linalg.norm(n)
-    # NOTE: in pricipal v and ne should be equal, but isnt at the moment
-    v = np.array([np.cos(az)*np.sin(zen)*-1,np.sin(az)*np.sin(zen)*-1.,np.cos(zen)*-1.])#
-    #v = np.array([np.cos(az)*np.sin(zen),np.sin(az)*np.sin(zen),np.cos(zen)])
-
-    v= v/np.linalg.norm(v)
-
-    s= dist1/np.linalg.norm(v) # in principal value should be one, but in any case calculate the absolute value
-    p= [np.mean(positions_sims[0,:,0]), np.mean(positions_sims[0,:,1]), np.mean(positions_sims[0,:,2])] ## center of plane 1
-    Xmax_pos= p- s* (v) # assuming that Xmax is "before" the planes
+    # NOTE: in principle v and ne should be equal, but isnt at the moment
+    sz = np.sin(zen)
+    v = np.array((-np.cos(az) * sz, -np.sin(az) * sz, -np.cos(zen)))
+    p = np.array((np.mean(positions_sims[0, :, 0]),
+                  np.mean(positions_sims[0, :, 1]),
+                  np.mean(positions_sims[0, :, 2]))) ## center of plane 1
+    Xmax_pos = p - dist1 * v # assuming that Xmax is "before" the planes
 
     if DISPLAY==1:
         import matplotlib.pyplot as plt
@@ -241,13 +212,16 @@ for b in range(len(positions)):
 
 
 
-    ## now you can construct a line given by Xmax_pos and your disired antenna positions. the Intersection points of this line with the planes gives you then the position for the pulseshape interpolation
-    # plane is given by (point-p_0)*n=0, line given by point=s*(Xmax_pos-positions)+ Xmax_pos
-    s0= np.dot( ( positions_sims[dist_plane[0],10]- Xmax_pos ), v)/ np.dot( (Xmax_pos-positions[b]), v) # intersection Point on plane dist_plane[0]
-    Inter_plane0 = s0*  (Xmax_pos-positions[b]) + Xmax_pos
-    s1= np.dot( ( positions_sims[dist_plane[1],10]- Xmax_pos ), v)/ np.dot( (Xmax_pos-positions[b]), v) # intersection Point on plane dist_plane[1]
-    Inter_plane1 = s1*  (Xmax_pos-positions[b]) + Xmax_pos
-    #print Inter_plane0, Inter_plane1
+    ## now you can construct a line given by Xmax_pos and your disired antenna
+    ## positions. the Intersection points of this line with the planes gives
+    ## you then the position for the pulseshape interpolation
+    # plane is given by (point-p_0)*n=0, line given by
+    # point=s*(Xmax_pos-positions)+ Xmax_pos
+    nrm = 1. / np.dot(Xmax_pos - positions[b], v)
+    s0 = np.dot(positions_sims[dist_plane[0], 10] - Xmax_pos, v) * nrm  # intersection Point on plane dist_plane[0]
+    Inter_plane0 = s0 * (Xmax_pos - positions[b]) + Xmax_pos
+    s1 = np.dot(positions_sims[dist_plane[1], 10] - Xmax_pos, v) * nrm  # intersection Point on plane dist_plane[1]
+    Inter_plane1 = s1 * (Xmax_pos - positions[b]) + Xmax_pos
     ##############
 
     #if DISPLAY==1:
@@ -278,85 +252,52 @@ for b in range(len(positions)):
 
     ################## PulseShape Interpolation part
 
-    ##rotate into shower coordninates
+    def get_neighbours(plane, Inter_plane):
+        """Rotate into shower coordinates and find the 4 closest neighbours
+        """
+        # Get the frame transform
+        offinz = np.mean(positions_sims[dist_plane[plane], :, 2])
+        offiny = np.mean(positions_sims[dist_plane[plane], :, 1])
+        offinx = np.mean(positions_sims[dist_plane[plane], :, 0])
+        pos = np.zeros((len(positions_sims[dist_plane[plane], :, :]), 3))
+        GetUVW = UVWGetter(offinx,offiny,offinz, zen, az, phigeo, thetageo)
 
-    #print positions_sims[dist_plane[0],:, 2], len(positions_sims[dist_plane[0],:])
+        def set_index(d, i):
+            """Set the indices of the neighbours antennas.
+            """
+            d[0] = i     # antenna which radius is smaller and angle smaller
+            d[1] = i + 1 # antenna which radius is smaller and angle larger
+            d[2] = i + 8 # antenna which radius is larger and angle smaller, based on 8 angles
+            d[3] = i + 9
 
-    # find the 4 closest neighbours
+        def compute_angle(a, b):
+            nrm = 1. / (np.linalg.norm(a) * np.linalg.norm(b))
+            c = np.clip(np.dot(a, b) * nrm, -1., 1.)
+            angle = np.arccos(c)
+            return angle
 
-    offinz= np.mean(positions_sims[dist_plane[0],:,2])
-    offiny= np.mean(positions_sims[dist_plane[0],:,1])
-    offinx= np.mean(positions_sims[dist_plane[0],:,0])
-    pos_0= np.zeros([len(positions_sims[dist_plane[0],:]),3])
-    GetUVW = UVWGetter(offinx,offiny,offinz, zen, az, phigeo, thetageo)
+        Inter = GetUVW(Inter_plane)
+        pos[0,:] = GetUVW(positions_sims[dist_plane[plane],0,:])
+        radius = np.linalg.norm(Inter)
+        angle = compute_angle(Inter, pos[0,:])
+        d = np.zeros(4, dtype=int)
+        set_index(d, 0)
 
-    Inter_0= GetUVW(Inter_plane0)
-    Inter_0[0] = 0. # v-comp. correct for rounding errors or so
-    radius=np.linalg.norm(Inter_0)
+        for i in np.arange(1, len(positions_sims[dist_plane[plane],:,:])):
+                pos[i,:] = GetUVW(positions_sims[dist_plane[plane],i,:])
+                if radius <= np.linalg.norm(pos[i,:]):
+                    continue
+                angle1 = compute_angle(pos[i,:], pos[0,:])
+                if (i % 8) > 3:
+                    angle1 = 2 * np.pi - angle1
+                if angle > angle1: # look for clostest alpha, pos[0,:] reference antenna
+                    set_index(d, i)
+        return Inter, pos, d
 
-    d0=np.zeros([4], dtype=int)
-    for i in np.arange(0,len(positions_sims[dist_plane[0],:])):
-            pos_0[i,:] = GetUVW(positions_sims[dist_plane[0],i])
-            pos_0[i,0] = 0. # v-comp. correct for rounding errors or so
-            if i==0:
-                angle= np.arccos(np.dot(Inter_0, pos_0[0,:] ) / (np.linalg.norm(Inter_0) * np.linalg.norm(pos_0[0,:] )))
-                if Inter_0[2] <0.: # vxvxB <0 -- plus pi in angle since function always return the smaller one
-                    angle=angle+ np.pi
-                #print angle
-            if radius > np.linalg.norm(pos_0[i,:]) : # r > r1
-               if i==0:
-                   angle1 =0.
-               #print radius, np.linalg.norm(pos_0[i,:])
-               else:
-                   angle1=np.arccos(np.dot(pos_0[i,:], pos_0[0,:] ) / (np.linalg.norm(pos_0[i,:]) * np.linalg.norm(pos_0[0,:] )))
-                   if i%8>3:
-                        angle1=2* np.pi- angle1
-               if angle > ( angle1 ):   # look for clostest alpha, pos[0,:] refernce antenna
-                   #print angle, np.arccos(np.dot(pos_0[i,:], pos_0[0,:] ) / (np.linalg.norm(pos_0[i,:]) * np.linalg.norm(pos_0[0,:] )))
-                   d0[0]=(i) # antenna which radius is smaller and angle smaller
-                   d0[1] =(i+1)# # antenna which radius is smaller and angle larger
-                   d0[2]=(i+8)# antenna which radius is larger and angle smaller, based on 8 angles
-                   d0[3] =(i+8+1)# # antenna which radius is larger and angle larger
+    Inter_0, pos_0, d0 = get_neighbours(0, Inter_plane0)
+    Inter_1, pos_1, d1 = get_neighbours(1, Inter_plane1)
 
-
-# plane 2
-    offinz= np.mean(positions_sims[dist_plane[1],:,2])
-    offiny= np.mean(positions_sims[dist_plane[1],:,1])
-    offinx= np.mean(positions_sims[dist_plane[1],:,0])
-    pos_1= np.zeros([len(positions_sims[dist_plane[1],:]),3])
-    GetUVW = UVWGetter(offinx,offiny,offinz, zen, az, phigeo, thetageo)
-
-    Inter_1= GetUVW(Inter_plane1)
-    Inter_1[0] = 0. # v-comp. correct for rounding errors or so
-    radius=np.linalg.norm(Inter_1)
-
-    d1=np.zeros([4], dtype=int)
-    for i in np.arange(0,len(positions_sims[dist_plane[1],:])):
-            pos_1[i,:] = GetUVW(positions_sims[dist_plane[1],i])
-            pos_1[i,0] = 0. # v-comp. correct for rounding errors or so
-            if i==0:
-                angle= np.arccos(np.dot(Inter_1, pos_1[0,:] ) / (np.linalg.norm(Inter_1) * np.linalg.norm(pos_1[0,:] )))
-                if Inter_0[2] <0.: # vxvxB <0 -- plus pi in angle since function always return the smaller one
-                    angle=angle+ np.pi
-                #print angle
-            if radius > np.linalg.norm(pos_1[i,:]) : # r > r1
-               if i==0:
-                   angle1 =0.
-               #print radius, np.linalg.norm(pos_0[i,:])
-               else:
-                   angle1=np.arccos(np.dot(pos_1[i,:], pos_1[0,:] ) / (np.linalg.norm(pos_1[i,:]) * np.linalg.norm(pos_1[0,:] )))
-                   if i%8>3:
-                        angle1=2* np.pi- angle1
-               if angle > ( angle1 ):   # look for clostest alpha, pos[0,:] refernce antenna
-                   #print angle, np.arccos(np.dot(pos_0[i,:], pos_0[0,:] ) / (np.linalg.norm(pos_0[i,:]) * np.linalg.norm(pos_0[0,:] )))
-                   d1[0]=(i) # antenna which radius is smaller and angle smaller
-                   d1[1] =(i+1)# # antenna which radius is smaller and angle larger
-                   d1[2]=(i+8)# antenna which radius is larger and angle smaller, based on 8 angles
-                   d1[3] =(i+8+1)# # antenna which radius is larger and angle larger
-
-            #print angle, radius, '    ', i,  "angles, radius", angle1, np.linalg.norm(pos_0[i,:])
-
-    if d0.any()>120. or d1.any() >120:
+    if (d0 > 120).any() or (d1 > 120).any():
         print "########  desired antenna position outside region in which interpolation works, no 4 neighbours.... antenna skipped"
         continue
     try:
@@ -369,11 +310,6 @@ for b in range(len(positions)):
     except IndexError:
         print "######## desired antenna position outside region in which interpolation works, no 4 neighbours.... antenna skipped"
         continue
-
-
-
-
-
 
     if DISPLAY==1:
 
@@ -491,20 +427,27 @@ for b in range(len(positions)):
 
 
 
-
     point_online1=ProjectPointOnLine(positions_sims[dist_plane[0],d0[0]], positions_sims[dist_plane[0],d0[1]], Inter_plane0)# Project Point on line 1
     if DISPLAY==1:
         print positions_sims[dist_plane[0],d0[0]], positions_sims[dist_plane[0],d0[1]], point_online1
-    if full==1:
-        #txt0=np.loadtxt(path1+'/scaled_'+str(sims[dist_plane[0]]) +'/a'+str(d0[0])+'.trace')
-        #txt1=np.loadtxt(path1 +'/scaled_'+str(sims[dist_plane[0]]) +'/a'+str(d0[1])+'.trace')
-        txt0=np.loadtxt(path1+str(sims[dist_plane[0]]) +'/a'+str((d0[0]))+'.trace')
-        txt1=np.loadtxt(path1 +str(sims[dist_plane[0]]) +'/a'+str((d0[1]))+'.trace')
-    else:
-        txt0=np.genfromtxt(path1+str(sims[dist_plane[0]]) +"/a"+str((d0[0]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
-        txt1=np.genfromtxt(path1+str(sims[dist_plane[0]]) +"/a"+str((d0[1]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
+
+    def get_traces(plane, d, i, j):
+        """Get the traces for antennas d[i], d[j] in the given plane
+        """
+        if full==1:
+            directory = path1 + str(sims[dist_plane[plane]])
+            ti = load_trace(directory, d[i])
+            tj = load_trace(directory, d[j])
+        else:
+            directory = path1 + str(sims[dist_plane[plane]])
+            suffix = "_{:}-{:}MHz.dat".format(str(f1*1E-06), str(f2*1E-06))
+            ti = load_trace(directory, d[i], suffix)
+            tj = load_trace(directory, d[j], suffix)
+        return ti, tj
+
     ## the interpolation of the pulse shape is performed
-    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[1], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[1], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=True) #switch on upsamling by factor 8
+    txt0, txt1 = get_traces(0, d0, 0, 1)
+    xnew1, tracedes1 = pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[1], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[1], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=True) #switch on upsamling by factor 8
 
 
     ### Get the pulseshape for the projection on line 2
@@ -514,16 +457,8 @@ for b in range(len(positions)):
         print '\n\n Projection 2 '
         print positions_sims[dist_plane[0],d0[2]], positions_sims[dist_plane[0],d0[3]], point_online2
 
-    if full==1:
-        #txt2=np.loadtxt(path1 +'/scaled_'+str(sims[dist_plane[0]]) +'/a'+str(d0[2])+'.trace')
-        #txt3=np.loadtxt(path1 +'/scaled_'+str(sims[dist_plane[0]]) +'/a'+str(d0[3])+'.trace')
-        txt2=np.loadtxt(path1 +str(sims[dist_plane[0]]) +'/a'+str((d0[2]))+'.trace')
-        txt3=np.loadtxt(path1 +str(sims[dist_plane[0]]) +'/a'+str((d0[3]))+'.trace')
-    else:
-        txt2=np.genfromtxt(path1+str(sims[dist_plane[0]]) +"/a"+str((d0[2]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
-        txt3=np.genfromtxt(path1+str(sims[dist_plane[0]]) +"/a"+str((d0[3]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
-
     ## the interpolation of the pulse shape is performed
+    txt2, txt3 = get_traces(0, d0, 2, 3)
     xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[1], positions_sims[dist_plane[0],d0[2]] , txt3.T[0], txt3.T[1], positions_sims[dist_plane[0],d0[3]], point_online2  ,upsampling=True) #switch on upsamling by factor 8
 
     if DISPLAY==1:
@@ -602,15 +537,9 @@ for b in range(len(positions)):
     point_online12=ProjectPointOnLine(positions_sims[dist_plane[1],d1[0]],positions_sims[dist_plane[1], d1[1]], Inter_plane1)# Project Point on line 1
     if DISPLAY==1:
         print positions_sims[dist_plane[1],d1[0]], positions_sims[dist_plane[1],d1[1]], point_online12
-    if full==1:
-        #txt0=np.loadtxt(path1+ '/scaled_'+str(sims[dist_plane[1]]) +'/a'+str(d1[0])+'.trace')
-        #txt1=np.loadtxt(path1+ '/scaled_'+str(sims[dist_plane[1]]) +'/a'+str(d1[1])+'.trace')
-        txt0=np.loadtxt(path1+ str(sims[dist_plane[1]]) +'/a'+str((d1[0]))+'.trace')
-        txt1=np.loadtxt(path1+ str(sims[dist_plane[1]]) +'/a'+str((d1[1]))+'.trace')
-    else:
-        txt0=np.genfromtxt(path1+str(sims[dist_plane[1]]) +"/a"+str((d1[0]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
-        txt1=np.genfromtxt(path1+str(sims[dist_plane[1]]) +"/a"+str((d1[1]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
+
     ## the interpolation of the pulse shape is performed
+    txt0, txt1 = get_traces(1, d1, 0, 1)
     xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[1], positions_sims[dist_plane[1],d1[0]] , txt1.T[0], txt1.T[1], positions_sims[dist_plane[1],d1[1]], point_online12 ,upsampling=True) #switch on upsamling by factor 8
 
 
@@ -621,16 +550,8 @@ for b in range(len(positions)):
     if DISPLAY==1:
         print positions_sims[dist_plane[1],d1[2]], positions_sims[dist_plane[1],d1[3]], point_online22
 
-    if full==1:
-        #txt2=np.loadtxt(path1+ '/scaled_'+str(sims[dist_plane[1]]) +'/a'+str(d1[2])+'.trace')
-        #txt3=np.loadtxt(path1+ '/scaled_'+str(sims[dist_plane[1]]) +'/a'+str(d1[3])+'.trace')
-        txt2=np.loadtxt(path1+ str(sims[dist_plane[1]]) +'/a'+str((d1[2]))+'.trace')
-        txt3=np.loadtxt(path1+ str(sims[dist_plane[1]]) +'/a'+str((d1[3]))+'.trace')
-    else:
-        txt2=np.genfromtxt(path1+str(sims[dist_plane[1]]) +"/a"+str((d1[4]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
-        txt3=np.genfromtxt(path1+str(sims[dist_plane[1]]) +"/a"+str((d1[5]))+'_'+str((f1*1e-6)) + '-' + str((f2*1e-6)) + 'MHz.dat', skip_footer=2)
-
     ## the interpolation of the pulse shape is performed
+    txt2, txt3 = get_traces(1, d1, 2, 3)
     xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[1], positions_sims[dist_plane[1],d1[2]] , txt3.T[0], txt3.T[1], positions_sims[dist_plane[1],d1[3]], point_online22 ,upsampling=True) #switch on upsamling by factor 8
 
     if DISPLAY==1:

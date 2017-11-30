@@ -75,7 +75,7 @@ def unwrap(phi, ontrue=None):
             print i, phi[i],phi[i-1],l, phi_unwrapped[i], abs(phi[i]- phi[i-1]), abs(phi[i]- phi[i-1] + numpy.pi), abs(phi[i]- phi[i-1] - numpy.pi) , l
     return phi_unwrapped
 
-def Interpolate_PulseShape(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=True, ontrue=None, flow=60.e6, fhigh=200.e6): #, nrdes):
+def Interpolate_PulseShape(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=None,  zeroadding=None, ontrue=None, flow=60.e6, fhigh=200.e6): #, nrdes):
     DISPLAY=0
 
     #hand over time traces of one efield component -t1=time, trace1=efield- and the position x1 of the first antenna, the same for the second antenna t2,trace2, x2.
@@ -132,9 +132,28 @@ def Interpolate_PulseShape(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=True
 
     # first antenna
     # upsampling if necessary
-    f = signal.resample(trace1, len(trace1)*factor_upsampling)
-    xnew = numpy.linspace(t1[0], t1[-1], len(trace1)*factor_upsampling, endpoint=False)
-    xnew=xnew*1.e-9# *1.e-9 to get time in s
+    # upsampling if necessary
+    if upsampling is not None:
+        trace1 = signal.resample(trace1, len(trace1)*factor_upsampling)
+        t1 = numpy.linspace(t1[0], t1[-1], len(trace1)*factor_upsampling, endpoint=False)
+        #t1=xnew*1.e-9# *1.e-9 to get time in s
+        #print len(xnew), len(f)
+                
+    if zeroadding is True:
+        max_element= len(trace1) # to shorten the array after zeroadding
+        #print len(t1),  'star', t1[0], 'desired end', 1.01*t1[-1], 'end', t1[-1], t1[1]-t1[0]
+        xnew=numpy.linspace(t1[0], 1.01*t1[-1], (1.01*t1[-1]-t1[0])/(t1[1]-t1[0]))
+        xnew=xnew*1.e-9
+        #print 'length later', len(xnew[0:max_element])
+        zeros= numpy.zeros(len(xnew)-max_element)
+        #print "diff", len(xnew)-max_element,len(xnew), max_element, xnew[1]-xnew[0]
+        f=trace1
+        f=numpy.hstack([f,zeros])
+        #print len(xnew), len(f)
+    if zeroadding is None:
+        f=trace1
+        xnew=t1*1.e-9
+        #print len(xnew), len(f)
 
     fsample=1./((xnew[1]-xnew[0])) #Hz
 
@@ -153,8 +172,20 @@ def Interpolate_PulseShape(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=True
     ## NOTE: Time binning always 1ns
 
     # upsampling if needed
-    f2 = signal.resample(trace2, len(trace2)*factor_upsampling)
-    xnew2 = numpy.linspace(t2[0], t2[-1], len(trace2)*factor_upsampling, endpoint=False)
+    if upsampling is not None:
+        trace = signal.resample(trace2, len(trace2)*factor_upsampling)
+        trace2=trace
+        t2 = numpy.linspace(t2[0], t2[-1], len(trace2)*factor_upsampling, endpoint=False)
+        #t2=t2*1.e-9
+        
+    if zeroadding is True:
+        xnew2=numpy.linspace(t2[0],t2[0]+ (xnew[-1]-xnew[0])*1e9 ,len(xnew)) # get the same length as xnew
+        xnew2=xnew2*1.e-9
+        f2=trace2
+        f2=numpy.hstack([f2,zeros])
+    if zeroadding is None:
+        f2=trace2
+        xnew2=t2*1e-9
 
     fsample2=1./((xnew2[1]-xnew2[0])*1.e-9)# *1.e-9 to get time in s
 
@@ -289,9 +320,14 @@ def Interpolate_PulseShape(t1, trace1, x1, t2, trace2, x2, xdes, upsampling=True
         ##plt.show()
         plt.show()
 
+    if zeroadding is True:
+        # hand over time of first antenna since interpolation refers to that time
+        return xnew[0:max_element]*1.e9, tracedes[0:max_element]
+
     if upsampling is not None:
         return xnew[0:-1:8]*1.e9, tracedes[0:-1:8]
     else:
+        xnew=numpy.delete(xnew,-1)
         return xnew*1.e9, tracedes # back to ns
 
 # at some point save the interpolated time traces for laer analysis

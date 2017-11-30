@@ -447,7 +447,7 @@ for b in xrange(len(positions)):
 
     ## the interpolation of the pulse shape is performed
     txt0, txt1 = get_traces(0, d0, 0, 1)
-    xnew1, tracedes1 = pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[1], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[1], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=True) #switch on upsamling by factor 8
+    xnew1, tracedes1 = pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[1], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[1], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
 
     ### Get the pulseshape for the projection on line 2
@@ -459,13 +459,13 @@ for b in xrange(len(positions)):
 
     ## the interpolation of the pulse shape is performed
     txt2, txt3 = get_traces(0, d0, 2, 3)
-    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[1], positions_sims[dist_plane[0],d0[2]] , txt3.T[0], txt3.T[1], positions_sims[dist_plane[0],d0[3]], point_online2  ,upsampling=True) #switch on upsamling by factor 8
+    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[1], positions_sims[dist_plane[0],d0[2]] , txt3.T[0], txt3.T[1], positions_sims[dist_plane[0],d0[3]], point_online2  ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
     if DISPLAY==1:
         print '\n interpolation plane 1'
     ##### Get the pulse shape of the desired position (projection on plane0) from projection on line1 and 2
     #print ' Pulse Shape '
-    xnew_planex0, tracedes_planex0 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online1, xnew2, tracedes2, point_online2, Inter_plane0) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
+    xnew_planex0, tracedes_planex0 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online1, xnew2, tracedes2, point_online2, Inter_plane0, zeroadding=True) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
 
 
 
@@ -476,20 +476,20 @@ for b in xrange(len(positions)):
     ## Get the pulseshape for the projection on line 1
         print ' Projection 1 '
     ## the interpolation of the pulse shape is performed
-    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[2], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[2], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=True) #switch on upsamling by factor 8
+    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[2], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[2], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
 
     ### Get the pulseshape for the projection on line 2 ---- some wrong
     if DISPLAY==1:
         print '\n\n Projection 2 '
     ## the interpolation of the pulse shape is performed
-    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[2], positions_sims[dist_plane[0],d0[2]] , txt3.T[0], txt3.T[2], positions_sims[dist_plane[0],d0[3]], point_online2  ,upsampling=True) #switch on upsamling by factor 8
+    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[2], positions_sims[dist_plane[0],d0[2]] , txt3.T[0], txt3.T[2], positions_sims[dist_plane[0],d0[3]], point_online2  ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
     if DISPLAY==1:
         print '\n interpolation plane 1'
     ##### Get the pulse shape of the desired position (projection on plane0) from projection on line1 and 2
     #print ' Pulse Shape '
-    xnew_planey0, tracedes_planey0 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online1, xnew2, tracedes2, point_online2, Inter_plane0) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
+    xnew_planey0, tracedes_planey0 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online1, xnew2, tracedes2, point_online2, Inter_plane0, zeroadding=True) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
 
 
     if DISPLAY==1:
@@ -499,21 +499,21 @@ for b in xrange(len(positions)):
     ## Get the pulseshape for the projection on line 1
         print ' Projection 1 '
     ## the interpolation of the pulse shape is performed
-    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[3], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[3], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=True) #switch on upsamling by factor 8
+    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[3], positions_sims[dist_plane[0],d0[0]] , txt1.T[0], txt1.T[3], positions_sims[dist_plane[0],d0[1]], point_online1 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
 
     ### Get the pulseshape for the projection on line 2
     if DISPLAY==1:
         print '\n\n Projection 2 '
     ## the interpolation of the pulse shape is performed
-    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[3], positions_sims[dist_plane[0],d0[2]] , txt3.T[0], txt3.T[3], positions_sims[dist_plane[0],d0[3]], point_online2  ,upsampling=True) #switch on upsamling by factor 8
+    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[3], positions_sims[dist_plane[0],d0[2]] , txt3.T[0], txt3.T[3], positions_sims[dist_plane[0],d0[3]], point_online2  ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
 
     if DISPLAY==1:
      print '\n interpolation plane 1'
     ##### Get the pulse shape of the desired position (projection on plane0) from projection on line1 and 2
     #print ' Pulse Shape '
-    xnew_planez0, tracedes_planez0 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online1, xnew2, tracedes2, point_online2, Inter_plane0) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
+    xnew_planez0, tracedes_planez0 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online1, xnew2, tracedes2, point_online2, Inter_plane0, zeroadding=True) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
 
 
 
@@ -540,7 +540,7 @@ for b in xrange(len(positions)):
 
     ## the interpolation of the pulse shape is performed
     txt0, txt1 = get_traces(1, d1, 0, 1)
-    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[1], positions_sims[dist_plane[1],d1[0]] , txt1.T[0], txt1.T[1], positions_sims[dist_plane[1],d1[1]], point_online12 ,upsampling=True) #switch on upsamling by factor 8
+    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[1], positions_sims[dist_plane[1],d1[0]] , txt1.T[0], txt1.T[1], positions_sims[dist_plane[1],d1[1]], point_online12 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
 
     ### Get the pulseshape for the projection on line 2
@@ -552,13 +552,13 @@ for b in xrange(len(positions)):
 
     ## the interpolation of the pulse shape is performed
     txt2, txt3 = get_traces(1, d1, 2, 3)
-    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[1], positions_sims[dist_plane[1],d1[2]] , txt3.T[0], txt3.T[1], positions_sims[dist_plane[1],d1[3]], point_online22 ,upsampling=True) #switch on upsamling by factor 8
+    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[1], positions_sims[dist_plane[1],d1[2]] , txt3.T[0], txt3.T[1], positions_sims[dist_plane[1],d1[3]], point_online22 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
     if DISPLAY==1:
         print '\n interpolation plane 2'
     ##### Get the pulse shape of the desired position (projection on plane1) from projection on line1 and 2
     #print ' Pulse Shape '
-    xnew_planex1, tracedes_planex1 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online12, xnew2, tracedes2, point_online22, Inter_plane1 ) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
+    xnew_planex1, tracedes_planex1 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online12, xnew2, tracedes2, point_online22, Inter_plane1, zeroadding=True ) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
 
 
     if DISPLAY==1:
@@ -567,20 +567,20 @@ for b in xrange(len(positions)):
     ## Get the pulseshape for the projection on line 1
         print ' Projection 1 '
     ## the interpolation of the pulse shape is performed
-    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[2], positions_sims[dist_plane[1],d1[0]] , txt1.T[0], txt1.T[2], positions_sims[dist_plane[1],d1[1]], point_online12 ,upsampling=True) #switch on upsamling by factor 8
+    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[2], positions_sims[dist_plane[1],d1[0]] , txt1.T[0], txt1.T[2], positions_sims[dist_plane[1],d1[1]], point_online12 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
 
     ### Get the pulseshape for the projection on line 2
     if DISPLAY==1:
         print '\n\n Projection 2 '
     ## the interpolation of the pulse shape is performed
-    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[2], positions_sims[dist_plane[1],d1[2]] , txt3.T[0], txt3.T[2], positions_sims[dist_plane[1],d1[3]], point_online22 ,upsampling=True) #switch on upsamling by factor 8
+    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[2], positions_sims[dist_plane[1],d1[2]] , txt3.T[0], txt3.T[2], positions_sims[dist_plane[1],d1[3]], point_online22 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
     if DISPLAY==1:
         print '\n interpolation plane 2'
     ##### Get the pulse shape of the desired position (projection on plane1) from projection on line1 and 2
     #print ' Pulse Shape '
-    xnew_planey1, tracedes_planey1 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online12, xnew2, tracedes2, point_online22, Inter_plane1 ) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
+    xnew_planey1, tracedes_planey1 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online12, xnew2, tracedes2, point_online22, Inter_plane1, zeroadding=True ) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
 
 
 
@@ -590,20 +590,20 @@ for b in xrange(len(positions)):
     ## Get the pulseshape for the projection on line 1
         print ' Projection 1 '
     ## the interpolation of the pulse shape is performed
-    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[3], positions_sims[dist_plane[1],d1[0]] , txt1.T[0], txt1.T[3], positions_sims[dist_plane[1],d1[1]], point_online12 ,upsampling=True) #switch on upsamling by factor 8
+    xnew1, tracedes1 =pulse.Interpolate_PulseShape(txt0.T[0], txt0.T[3], positions_sims[dist_plane[1],d1[0]] , txt1.T[0], txt1.T[3], positions_sims[dist_plane[1],d1[1]], point_online12 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
 
     ### Get the pulseshape for the projection on line 2
     if DISPLAY==1:
         print '\n\n Projection 2 '
     ## the interpolation of the pulse shape is performed
-    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[3], positions_sims[dist_plane[1],d1[2]] , txt3.T[0], txt3.T[3], positions_sims[dist_plane[1],d1[3]], point_online22 ,upsampling=True) #switch on upsamling by factor 8
+    xnew2, tracedes2 =pulse.Interpolate_PulseShape(txt2.T[0], txt2.T[3], positions_sims[dist_plane[1],d1[2]] , txt3.T[0], txt3.T[3], positions_sims[dist_plane[1],d1[3]], point_online22 ,upsampling=None, zeroadding=True) #switch on upsamling by factor 8
 
     if DISPLAY==1:
         print '\n interpolation plane 2'
     ##### Get the pulse shape of the desired position (projection on plane1) from projection on line1 and 2
     #print ' Pulse Shape '
-    xnew_planez1, tracedes_planez1 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online12, xnew2, tracedes2, point_online22, Inter_plane1 ) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
+    xnew_planez1, tracedes_planez1 =pulse.Interpolate_PulseShape(xnew1, tracedes1, point_online12, xnew2, tracedes2, point_online22, Inter_plane1 , zeroadding=True) #(t1, trace1, x1, t2, trace2, x2, xdes, path, nrdes)
 
 
 
@@ -611,11 +611,11 @@ for b in xrange(len(positions)):
 
     if DISPLAY==1:
         print '\n\n final interpolation'
-    xnew_desiredx, tracedes_desiredx =pulse.Interpolate_PulseShape(xnew_planex0, tracedes_planex0, Inter_plane0 ,xnew_planex1, tracedes_planex1, Inter_plane1, positions[b])
+    xnew_desiredx, tracedes_desiredx =pulse.Interpolate_PulseShape(xnew_planex0, tracedes_planex0, Inter_plane0 ,xnew_planex1, tracedes_planex1, Inter_plane1, positions[b], zeroadding=True)
 
-    xnew_desiredy, tracedes_desiredy =pulse.Interpolate_PulseShape(xnew_planey0, tracedes_planey0, Inter_plane0 ,xnew_planey1, tracedes_planey1, Inter_plane1, positions[b])
+    xnew_desiredy, tracedes_desiredy =pulse.Interpolate_PulseShape(xnew_planey0, tracedes_planey0, Inter_plane0 ,xnew_planey1, tracedes_planey1, Inter_plane1, positions[b], zeroadding=True)
 
-    xnew_desiredz, tracedes_desiredz =pulse.Interpolate_PulseShape(xnew_planez0, tracedes_planez0, Inter_plane0 ,xnew_planez1, tracedes_planez1, Inter_plane1, positions[b])
+    xnew_desiredz, tracedes_desiredz =pulse.Interpolate_PulseShape(xnew_planez0, tracedes_planez0, Inter_plane0 ,xnew_planez1, tracedes_planez1, Inter_plane1, positions[b], zeroadding=True)
 
 
 

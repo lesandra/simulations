@@ -33,5 +33,5 @@ def XYZGetter(cx, cy, cz, zen, az, phigeo, bfieldangle):
     origin = numpy.array((cx, cy, cz))
 
     def GetXYZ(pos):
-        return numpy.dot(pos, Rt) + origin
+        return numpy.dot(Rt, pos) + origin
     return GetXYZ

@@ -24,7 +24,7 @@ def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None
     # Note: azim & zenith are in GRAND conventions
 
     zen, azim = GRANDtoNEC(zenith,azimuth)
-    print 'get_voltage: computing antenna response for wave with zenith=',zen,'deg, azimuth=',azim,'deg (**NEC conventions**).'
+    #print 'get_voltage: computing antenna response for wave with zenith=',zen,'deg, azimuth=',azim,'deg (**NEC conventions**).'
     zen = zen*pi/180
     azim = azim*pi/180;
     delt = time1[1]-time1[0];
@@ -201,8 +201,10 @@ def get_voltage(time1=None,Ex=None, Ey=None, Ez=None, zenith=None, azimuth =None
     timet     = np.arange(0, len(vt))/Fs
     timep     = np.arange(0, len(vp))/Fs
     
-    print 'Peak to peak voltage amplitude = ', max(voltage) - min(voltage),'muV'
-
+    
+    print '    Peak to peak voltage amplitude = ', max(voltage) - min(voltage),'muV'
+    
+    
     return(voltage, timet+time_off)
 
 
@@ -215,7 +217,7 @@ def effective_zenith(zen, azim, alpha, x_ant, y_ant, z_ant, x_xmax=0, y_xmax=0, 
 	azim = azim * np.pi / 180
 	alpha = alpha * np.pi / 180
 	
-	print 'Now computing effective zenith angle to Xmax from antenna location.'
+	#print 'Now computing effective zenith angle to Xmax from antenna location.'
 	
 	# shower direction: where it goes to
 	v = np.array([np.cos(azim)*np.sin(zen), np.sin(azim)*np.sin(zen), np.cos(zen)]) # or *-1: change the direction
@@ -227,7 +229,7 @@ def effective_zenith(zen, azim, alpha, x_ant, y_ant, z_ant, x_xmax=0, y_xmax=0, 
 
 	
 	Xmax= np.array([x_xmax,y_xmax,z_xmax])
-	print 'Xmax position:',Xmax
+	#print 'Xmax position:',Xmax
 	#print(v, Xmax)
 			
 	ant= np.array([x_ant, y_ant, z_ant])  # antenna position
@@ -281,7 +283,7 @@ if __name__ == '__main__':
   # NOTE: adapt to your time from whatever to s
   time1_sim= time1_sim*1e-9 # time has to be handed in s
 
-  print 'Now computing antenna response...'
+  #print 'Now computing antenna response...'
   effective = float(sys.argv[6])
   if effective==1:
   # Compute effective zenith
@@ -294,25 +296,25 @@ if __name__ == '__main__':
  
   	  else :
   		  try :
-  			  print 'Trying to read antenna position from antpos.dat file...'
+  			  #print 'Trying to read antenna position from antpos.dat file...'
 			  numberline = int(l) + 1
-			  line = linecache.getline(path+'/antpos.dat', numberline)
+			  line = linecache.getline(path+'/antpos_corr.dat', numberline)
 			  [x_sim, y_sim, z_sim] = map(float, line.split())
-  			  print 'Done. Antenna',l,' at position [', x_sim, y_sim, z_sim,'].'
+  			  print 'Read antenna position from antpos.dat file... Antenna',l,' at position [', x_sim, y_sim, z_sim,'].'
  
   		  except : 
  			  print 'No antenna position file found, please put antpos.dat in', path, 'or enter antenna positions as arguments.'
   			  sys.exit()
           # Then compute Xmax
-	  injection_height = 3000
+	  injection_height = 346 ## always refeering to sealevel
 	  hor_dist=8000. # approx. horizontal distance from injection point to xmax
-	  print 'Now computing Xmax position from injection height=',injection_height,'m, horizontal distance to Xmax= ',hor_dist,'m and (zen,azim) values.'
+	  #print 'Now computing Xmax position from injection height=',injection_height,'m, horizontal distance to Xmax= ',hor_dist,'m and (zen,azim) values.'
 	  caz = np.cos(azimuth_sim*pi/180)
 	  saz = np.sin(azimuth_sim*pi/180)
 	  czen = np.cos(zenith_sim*pi/180)
 	  szen = np.sin(zenith_sim*pi/180) 
 	  Xmax = hor_dist/szen*np.array([caz*szen, saz*szen, czen])+np.array([0,0,injection_height])
-	  print 'Xmax = ',Xmax
+	  #print 'Xmax = ',Xmax
 	  # Finally compute effective zenith
 	  zenith_eff = effective_zenith(zenith_sim, azimuth_sim, alpha_sim, x_sim, y_sim, z_sim, Xmax[0], Xmax[1], Xmax[2])
  
@@ -320,8 +322,8 @@ if __name__ == '__main__':
           ## zenith: correct for mountain slope
 	  zenith_eff= 180-(zenith_sim+alpha_sim) # Switch to antenna convention
     
-  print 'Effective zenith (in GRAND conventions): ', zenith_eff,' deg.'	  
-  print "Azimuth (in GRAND conventions) ", azimuth_sim,' deg.'    
+  #print 'Effective zenith (in GRAND conventions): ', zenith_eff,' deg.'	  
+  #print "Azimuth (in GRAND conventions) ", azimuth_sim,' deg.'    
   if zenith_eff < 90 :
   	  print ' --- Wave coming from ground (GRAND zenith smaller than 90deg), antenna response not computed for that angle. Abort --- '
   	  exit()
@@ -334,8 +336,13 @@ if __name__ == '__main__':
   print '*** Computing SN voltage...'
   voltage_NS, timeNS = get_voltage( time1=time1_sim,Ex=Ex_sim, Ey=Ey_sim, Ez=Ez_sim, zenith=zenith_eff, azimuth=azimuth_sim, EW=0)
 
-  pl.savetxt('out_'+str(l)+'.txt', (timeEW, voltage_EW, voltage_NS))#, voltage_NS))
+  #pl.savetxt(path+'out_'+str(l)+'.txt', (timeEW, voltage_EW, voltage_NS), newline='\r\n')#, voltage_NS))
 
+  f = file(path+'out_'+str(l)+'.txt',"w")
+  for i in np.arange(len(timeEW)):
+            print >>f,"%1.5e	%1.5e	%1.5e" % (timeEW[i], voltage_EW[i], voltage_NS[i] )
+        
+  f.close()
 
   ###plots
   plt.figure(1,  facecolor='w', edgecolor='k')

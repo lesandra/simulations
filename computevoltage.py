@@ -295,7 +295,7 @@ if __name__ == '__main__':
     print "single antenna with ID: ", str(start)," handed over"
   if  len(sys.argv)<7: # grep all antennas from the antenna file
   
-    positions=np.genfromtxt(path+'/antpos_test.dat')
+    positions=np.genfromtxt(path+'/antpos.dat')
     start=0
     end=len(positions)
     print "Array with ", end, " antennas handed over"
@@ -331,7 +331,7 @@ if __name__ == '__main__':
                     try :
                             #print 'Trying to read antenna position from antpos.dat file...'
                             numberline = int(l) + 1
-                            line = linecache.getline(path+'/antpos_test.dat', numberline)
+                            line = linecache.getline(path+'/antpos.dat', numberline)
                             [x_sim, y_sim, z_sim] = map(float, line.split())
                             print 'Read antenna position from antpos.dat file... Antenna',l,' at position [', x_sim, y_sim, z_sim,'].'
     

@@ -1,10 +1,10 @@
+#!/usr/bin/env python
+
 """
-    
                     Script danton_to_zhaires
                         Version 1.0
     Written by N. Renault-Tinacci from a script provided by C. Medina
                 Using danton.py developped by V. Niess
-
 """
 
 import json
@@ -24,28 +24,28 @@ from matplotlib.colors import ListedColormap
 from mpl_toolkits.mplot3d import Axes3D
 
 ##################################################################
-# Define a few systematic others
+# Define a few systematic variables
 part_dic={'221.0':'eta','211.0': 'pi+', '-211.0': 'pi-','111.0': 'pi0', '22.0':'gamma', '13.0':'muon', '11.0': 'electron', '15.0':'tau', '16.0':'nu(t)', '321.0': 'K+', '-321.0': 'K-','130.0':'K0L', '310.0':'K0S','-323.0':'K*+'}
 GEOMAGNET = (56.5, 63.18, 2.72) # Geomagnetic field (Amplitude [uT], inclination [deg], declination [deg]).
 ZREF=1500. #Altitude of the array
-ground_alt = 0. #Ground Altitude. If changed, all showers with injection height (provided by DANTON) below this altitude won't run with ZHAires
-DISPLAY = False #To plot the 3D map of the radio array (in particular the selected antennas)
+ground_alt = 0. #Ground Altitude. If changed, all showers with injection height (provided by DANTON) below this altitude won't run with ZHAireS
+DISPLAY = True #To plot the 3D map of the radio array (in particular the selected antennas)
 
 ##########################################################################################################
 def main():
-    """ Main script allowing to produce the ZHAires input files for each one of the showers from a DANTON library """
+    """ Main script allowing to produce the ZHAireS input files for each one of the showers from a DANTON library """
 
     ##################################################################
     # Test arguments
     if (len(sys.argv)<7 or len(sys.argv)>8):
         print """\
-    This script will allow to produce the ZHAires input files from the DANTON output libraries (in txt format). 
+    This script will allow to produce the ZHAireS input files from the DANTON output libraries (in txt format). 
     It is dedicated to earth-skimming neutrino simulation preparation.
     It creates a regular rectangular array more elongated along the shower axis.
     The seed of each shower is uniformly randomized between 0 and 1.
 
     Inputs : 
-        work_dir = directory where all DANTON libraries, ZHAires input files and the simulation results will be stored.
+        work_dir = directory where all DANTON libraries, ZHAireS input files and the simulation results will be stored.
         danton_lib = path to danton library
         distance = distance between the decay point and the beginning of the radio array [in m]
         slope = angle between horizontal and the slope along which the radio array is distributed [in degrees]
@@ -57,7 +57,7 @@ def main():
                     _ set ot to the wanted azimuth defined in GRAND coordinates [in degrees] (rotation of the array correspondingly to be implemented)
         
     Ouput:
-        The script will produce as many ZHAires input files as there are showers in the DANTON output library. 
+        The script will produce as many ZHAireS input files as there are showers in the DANTON output library. 
         They will located in the work_dir+"/inp/" directory.
 
     Usage:  python danton_to_zhaires.py work_dir danton_lib distance slope height step azimuth(=option)
@@ -86,8 +86,8 @@ def main():
     Ny = int(np.round(25e3/sep)) #number of lines in Y direction
 
     ##################################################################
-    #Output directory for ZhAires results.
-    DATAFS = work_dir+'showerdata/'
+    #Output directory for ZHAireS results.
+    DATAFS = work_dir+'/showerdata/'
     showerdata_file = DATAFS+os.path.splitext(os.path.basename(danton_lib+'-showerdata.txt'))[0]
     inp_dir = work_dir+'/inp_D'+str(int(Dd))+'m_Z'+str(int(slope))+'deg_h'+str(int(hz))+'m_'+str(int(sep))+'m/'
     if not(os.path.isdir(DATAFS)):
@@ -106,12 +106,12 @@ def main():
                 data.append((event.id, decay.tau_f.energy, event.primary.energy, depth, height, theta, azim, delta, decay.generation,
                     et, et/decay.tau_f.energy))  
 
-    ### Save data arrays
+                ### Save data arrays
                 neu_file = DATAFS + str(event.id)+'.part'    
-                np.savetxt(neu_file,dataprod,fmt='%d %d %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f' ,header="Neu-ID Prod-ID ux uy uz EProd ThetaProd Zenith-ZHAires Azimuth_ZHAires Height-above-sea-level Depth NuEner TauEner")  
+                np.savetxt(neu_file,dataprod,fmt='%d %d %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f' ,header="Neu-ID Prod-ID ux uy uz EProd ThetaProd Zenith-ZHAireS Azimuth_ZHAireS Height-above-sea-level Depth NuEner TauEner")  
                 
     data = np.array(data)
-    np.savetxt(showerdata_file,data,fmt='%d %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.1f', header="Id TauEnergy NeuEnergy  Depth Height-above-sea-level Zenith-ZHAires Azimuth_ZHAires Delta Generation  ProdEnergy  ")
+    np.savetxt(showerdata_file,data,fmt='%d %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.1f', header="Id TauEnergy NeuEnergy  Depth Height-above-sea-level Zenith-ZHAireS Azimuth_ZHAireS Delta Generation  ProdEnergy  ")
 
     print "+ {:} tau decays for {:} incoming neutrinos".format(len(data), lastid+1)
     print('******************************')
@@ -122,16 +122,16 @@ def main():
     ANTENNAS=[]
     ANTENNAS=compute_antenna_pos(Dd,slope,sep,Ny,hz)
 
-    ### Compute parameters for ZHAires input files
+    ### Compute parameters for ZHAireS input files
     showers=glob.glob(DATAFS+'*.part')
     if DISPLAY:
-        shower_list=showers[15:21]
+        shower_list=showers[15:20] #Choose some indices. Avoid diplaying the array for all the showers in the DANTON library.
     else:
         shower_list = showers
     for fname in shower_list:
         [showerID,etot,azim,theta,multip,alt] = compute_shower_parameters(fname)
         if DISPLAY:
-            print 'showerID = ',showerID,' Eshower = ',etot,' azimuth_zhaires = ',azim,' zenith_zhaires = ',theta,' injection height =',alt
+            print 'showerID = ',showerID,' Eshower = ',etot,' azimuth_ZHAireS = ',azim,' zenith_ZHAireS = ',theta,' injection height =',alt
 
         fileZha = inp_dir+showerID+ '.inp'
         dir=os.path.dirname(fileZha)
@@ -144,12 +144,12 @@ def main():
         ### Reduce the radio array to the shower geometrical footprint (we account for a footprint twice larger than the Cherenkov angle)
         ANTENNAS2 = reduce_antenna_array(alt,theta,ANTENNAS,CORE,DISPLAY)
         if azim!=180.:
-            #ANTENNAS3 = rotate_antenna_array(ANTENNAS2,azim) #to be implemented
-            ANTENNAS3 = np.copy(ANTENNAS2)
+            ANTENNAS3 = rotate_antenna_array(ANTENNAS2,azim) #to be implemented
+            #ANTENNAS3 = np.copy(ANTENNAS2)
         else:
             ANTENNAS3 = np.copy(ANTENNAS2)
 
-        ### Write the ZHAires input file
+        ### Write the ZHAireS input file
         inpfile = open(fileZha,"w+")
         totito  = generate_input(showerID, etot, azim, theta, multip, alt,ANTENNAS3)
         inpfile.write(totito)
@@ -181,33 +181,48 @@ def array_display(ANTENNAS=None,datamap=None,title=None):
     return
 
 ##########################################################################################################
-def DANTONtoZHAires(zen_DANTON=None, azim_DANTON=0):
-    """ Convert coordinates from DANTON convention to ZHAires convention """
+def DANTONtoZHAireS(zen_DANTON=None, azim_DANTON=0):
+    """ Convert coordinates from DANTON convention to ZHAireS convention """
 
     zen = (180.-zen_DANTON)
     azim = azim_DANTON - 180.
     if azim>360:
-      azim = azim-360.
+        azim = azim-360.
     elif azim<0.:
         azim = azim+360.
     return [zen,azim]
 
 ##########################################################################################################
 def DANTONtoGRAND(zen_DANTON=None, azim_DANTON=0):
-    """ Convert coordinates from DANTON convention to ZHAires convention """
+    """ Convert coordinates from DANTON convention to ZHAireS convention """
 
     zen = zen_DANTON
     azim = azim_DANTON
     if azim>360:
-      azim = azim-360.
+        azim = azim-360.
     elif azim<0.:
         azim = azim+360.
-    return [zen,azim]
+    return zen,azim
+
+##########################################################################################################
+def DANTONtoGRAND_build(event=None,decay=None,AZIMUTH=0.):
+    """ From a DANTON event, retrieve the shower characteristics and build some statistics """
+    """ Produce a table for each shower with all its parameters in GRAND convention """
+
+    if AZIMUTH=='random':
+        azim_i = random.uniform(0.,1.)*360.
+    else:
+        azim_i = float(AZIMUTH)
+
+    theta_danton = np.degrees(np.arccos(np.dot(decay.tau_f.direction, decay.tau_f.position) / np.linalg.norm(r2)))
+    theta, azim = DANTONtoGRAND(theta_danton,azim_i)
+
+    return theta,azim
 
 ##########################################################################################################
 def compute_antenna_pos(distance=None, inclin=0., step=1e3, nsidey=None,hz=None):
     """ Generate antenna positions in a flat or inclined plane @ a given distance from decay"""
-    """ Return N positions (x,y,z) in Zhaires coordinates """
+    """ Return N positions (x,y,z) in ZHAireS coordinates """
 
     if inclin!=0. and inclin!=90.:
         disty = step*nsidey
@@ -269,14 +284,14 @@ def getCerenkovAngle(h=100e3):
     """ Compute the Cherenkov angle of the shower at the altitude of injection """
 
     # h in meters
-    n = 1.+325.e-6*np.exp(-0.1218*h*1e-3)      # Refractive index Zhaires (see email M. Tueros 25/11/2016)
+    n = 1.+325.e-6*np.exp(-0.1218*h*1e-3)      # Refractive index ZHAireS (see email M. Tueros 25/11/2016)
     alphac = np.arccos(1./n)  
     return alphac
 
 ##########################################################################################################
 def reduce_antenna_array(injh=None,theta=None,ANTENNAS=None,core=[0.,0.,0.],DISPLAY=False): 
     """ Reduce the size of the initialized radio array to the shower geometrical footprint by computing the angle between shower and decay-point-to-antenna axes """
-    """ theta = zenith in ZHAires convention [in deg], injh = injection height [in m] """
+    """ theta = zenith in ZHAireS convention [in deg], injh = injection height [in m] """
     
     # Convert back to GRAND coordinates
     zenr = np.pi - np.radians(theta)
@@ -321,14 +336,22 @@ def rotate_antenna_array(ANTENNAS=None,azim=0.):
     """ For a azimuth different of 0, one need to rotate the radio array with azimuth """
     """ so that the longest side of the array is aligned with shower axis """
 
-    #To implement
+    azimr = np.pi+np.radians(azim)
+    if azimr>2*np.pi:
+        azimr = azimr-2.*np.pi
+    elif azimr<0.:
+        azim = azim+2.*np.pi
+    ANTENNAS2 = np.copy(ANTENNAS)
+    ANTENNAS2[:,0] = ANTENNAS[:,0]*np.cos(azimr)-ANTENNAS[:,1]*np.sin(azimr)
+    ANTENNAS2[:,1] = ANTENNAS[:,0]*np.sin(azimr)+ANTENNAS[:,1]*np.cos(azimr)
+    ANTENNAS2[:,2] = ANTENNAS[:,2]
 
     return ANTENNAS2
 
 ##########################################################################################################
 def parse_build(event=None,decay=None,AZIMUTH=0.):
     """ From a DANTON event, retrieve the shower characteristics and build some statistics """
-    """ Produce a table for each shower with all its parameters """
+    """ Produce a table for each shower with all its parameters in ZHAireS convention """
 
     if AZIMUTH=='random':
         azim_i = random.uniform(0.,1.)*360.
@@ -345,7 +368,7 @@ def parse_build(event=None,decay=None,AZIMUTH=0.):
     depth = danton.EARTH_RADIUS - np.linalg.norm(r1)
     height = R2 - danton.EARTH_RADIUS 
     theta_danton = np.degrees(np.arccos(np.dot(u2, r2) / R2))
-    theta, azim = DANTONtoZHAires(theta_danton,azim_i)
+    theta, azim = DANTONtoZHAireS(theta_danton,azim_i)
               
     dataprod = []
     et=0.0 #in GeV
@@ -356,7 +379,45 @@ def parse_build(event=None,decay=None,AZIMUTH=0.):
         et=et+ep #in GeV
         up=pp/ep
         thetap_danton=np.degrees(np.arccos(np.dot(up, r2) / R2))
-        thetap, azim = DANTONtoZHAires(thetap_danton,azim_i)
+        thetap, azim = DANTONtoZHAireS(thetap_danton,azim_i)
+        dataprod.append((event.id,idp,up[0],up[1],up[2],ep,thetap,theta,azim,height,depth,event.primary.energy,
+            decay.tau_f.energy))
+    dataprod = np.array(dataprod)
+
+    return dataprod,depth,height,theta,azim,delta,et
+
+##########################################################################################################
+def parse_build_GRAND(event=None,decay=None,AZIMUTH=0.):
+    """ From a DANTON event, retrieve the shower characteristics and build some statistics """
+    """ Produce a table for each shower with all its parameters in GRAND convention """
+
+    if AZIMUTH=='random':
+        azim_i = random.uniform(0.,1.)*360.
+    else:
+        azim_i = float(AZIMUTH)
+
+    r1 = decay.tau_i.position
+    r2 = decay.tau_f.position
+    R2 = np.linalg.norm(r2)
+    u2 = decay.tau_f.direction
+    c = np.dot(u2, event.primary.direction)
+    if c > 1: delta = 0.
+    else: delta = np.arccos(c)   
+    depth = danton.EARTH_RADIUS - np.linalg.norm(r1)
+    height = R2 - danton.EARTH_RADIUS 
+    theta_danton = np.degrees(np.arccos(np.dot(u2, r2) / R2))
+    theta, azim = DANTONtoGRAND(theta_danton,azim_i)
+              
+    dataprod = []
+    et=0.0 #in GeV
+    for i in decay.product:
+        idp = i[0]
+        pp=i[1]
+        ep=np.sqrt(pp[0]**2+pp[1]**2+pp[2]**2) #in GeV ignoring mass energy
+        et=et+ep #in GeV
+        up=pp/ep
+        thetap_danton=np.degrees(np.arccos(np.dot(up, r2) / R2))
+        thetap, azim = DANTONtoGRAND(thetap_danton,azim_i)
         dataprod.append((event.id,idp,up[0],up[1],up[2],ep,thetap,theta,azim,height,depth,event.primary.energy,
             decay.tau_f.energy))
     dataprod = np.array(dataprod)
@@ -365,7 +426,7 @@ def parse_build(event=None,decay=None,AZIMUTH=0.):
 
 ##########################################################################################################
 def compute_shower_parameters(fname=None):
-    """ From the .part file produce for each shower, compute the parameters that will allow the production of the ZHAires input file """
+    """ From the .part file produce for each shower, compute the parameters that will allow the production of the ZHAireS input file """
 
     num_lines = sum(1 for line in open(fname))
     TASK0=fname.replace('/','.')
@@ -398,7 +459,7 @@ def compute_shower_parameters(fname=None):
 
 ##########################################################################################################
 def generate_input(task=0,energy=None, azimuth=None, zenith=None, products=None, height=None, antennas=None):
-    """Generate the input stream for ZHAIRES."""
+    """Generate the input stream for ZHAireS."""
 
     a=" ".join(map(str, products))
     b="".join( c for c in a if  c not in "(),[]''")
@@ -455,6 +516,7 @@ def generate_input(task=0,energy=None, azimuth=None, zenith=None, products=None,
         "ELimsTables 2 MeV 1 TeV",
         "ExportTables 5501 Opt a",
         "ExportTables 1293 Opt as",
+        "ExportTable 1205 Opt s",
         "ExportTable 1793 Opt s",
         "ExportTable 1793 Opt as",
         "ExportTable 7293 Opt s", 

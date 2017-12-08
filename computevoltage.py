@@ -318,9 +318,10 @@ if __name__ == '__main__':
 	  # Finally compute effective zenith
 	  zenith_eff = effective_zenith(zenith_sim, azimuth_sim, alpha_sim, x_sim, y_sim, z_sim, Xmax[0], Xmax[1], Xmax[2])
  
-  else: # in case effective zenith not wanted, one still has to account for mountain slope and switch to NEC conventions.
+  else: # in case effective zenith not wanted, one still has to account for mountain slope 
           ## zenith: correct for mountain slope
-	  zenith_eff= 180-(zenith_sim+alpha_sim) # Switch to antenna convention
+	  zenith_eff= 180-(zenith_sim+alpha_sim) # in antenna convention
+	  zenith_eff= 180.- zenith_eff # back to GRAND conventions
     
   #print 'Effective zenith (in GRAND conventions): ', zenith_eff,' deg.'	  
   #print "Azimuth (in GRAND conventions) ", azimuth_sim,' deg.'    

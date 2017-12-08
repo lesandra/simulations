@@ -310,7 +310,10 @@ if __name__ == '__main__':
     print 'Efield file: ', efieldtxt
     
     # Model the input signal.
-    time1_sim, Ex_sim, Ey_sim,Ez_sim = np.loadtxt(efieldtxt,delimiter=' ',usecols=(0,1,2,3),unpack=True)
+    try: 
+        time1_sim, Ex_sim, Ey_sim,Ez_sim = np.loadtxt(efieldtxt,delimiter=' ',usecols=(0,1,2,3),unpack=True)
+    except IOError:
+        continue
 
     # NOTE: adapt to your time from whatever to s
     time1_sim= time1_sim*1e-9 # time has to be handed in s

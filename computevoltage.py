@@ -378,7 +378,7 @@ if __name__ == '__main__':
 
     f = file(path+'/out_'+str(l)+'.txt',"w")
     for i in np.arange(len(timeEW)):
-                print >>f,"%1.5e	%1.5e	%1.5e" % (timeEW[i], voltage_EW[i], voltage_NS[i] )            
+                print >>f,"%1.5e	%1.2e	%1.2e" % (timeEW[i], voltage_EW[i], voltage_NS[i] ) # same number of digits as input
     f.close()
 
 

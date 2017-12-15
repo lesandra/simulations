@@ -376,7 +376,7 @@ if __name__ == '__main__':
 
     #pl.savetxt(path+'out_'+str(l)+'.txt', (timeEW, voltage_EW, voltage_NS), newline='\r\n')#, voltage_NS)) # is not working correctly
 
-    f = file(path+'out_'+str(l)+'.txt',"w")
+    f = file(path+'/out_'+str(l)+'.txt',"w")
     for i in np.arange(len(timeEW)):
                 print >>f,"%1.5e	%1.5e	%1.5e" % (timeEW[i], voltage_EW[i], voltage_NS[i] )            
     f.close()

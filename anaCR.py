@@ -9,7 +9,7 @@ pi = 3.1415927
 nantmin = 6
 ndays = 1  # duration of observation (days)
 
-# Flux
+# Flux (TA - astro-ph 1511.07510)
 J1 = 1.06e29  # /s/m2/sr/eV
 gamma1 = 3.26 
 J2 = 4.5e17
@@ -20,10 +20,12 @@ f2 = [J2*pow(x,-gamma2)*pow(x,3)/1e24 for x in eth]  # above ankle
 
 # Load results
 #datadir = '/home/martineau/GRAND/GRAND/data/zhaires/CRs/'
-resfile = 'CR_detection_count.txt'
+resfile = 'detection_count.txt'
 res = np.loadtxt(resfile)
 Elog = res[:,0]
 eu = np.unique(Elog)
+sefftc = np.zeros([1,1])
+eu[0] = 19
 E= pow(10,Elog)
 theta = res[:,1]
 th = np.unique(theta)
@@ -41,8 +43,8 @@ nta = res[:,11]
   
 ## Plots
 # Core positions
-#pl.figure(0)
-#pl.plot(xc,yc,'o')
+pl.figure(0)
+pl.plot(xc,yc,'o')
 #pl.show()
 # Flux
 #pl.figure(1)
@@ -51,7 +53,7 @@ nta = res[:,11]
 #pl.xlabel('Energy (eV)')
 #pl.ylabel('Flux*E$^3$ (eV$^2$/s/sr/m$^2$)')
 #pl.legend(loc='best')
-#pl.title("Fly's Eye flux - astro-ph 1511.07710")
+#pl.title("TA flux - astro-ph 1511.07510")
 #pl.grid(True)
 #pl.show()
 
@@ -105,7 +107,7 @@ pl.ylabel('Apperture (km$^2$.sr)')
 pl.grid(True)
 pl.legend(loc='best')
 pl.title("GRAND CR apperture")
-pl.show() 
+#pl.show() 
 
 seffta = seffta*1e6  #m2
 sefftc = sefftc*1e6  #m2
@@ -126,7 +128,8 @@ print 'Optimal daily event rate in 10^19-10^20eV:',evt1doptHE
 
 
 # Apperture vs zenith
-sefft = np.zeros(np.size(th))
+seffta = np.zeros(np.size(th))
+sefftc = np.zeros(np.size(th))
 for t in range(np.size(th)):
   sel = np.where( (theta == th[t]) )
   sphi = sn[sel[0][0]]*200000*4  # GRAND physical area projected along traj  [km2]. Factor 4 comes from try area = 0.25km^2.
@@ -135,8 +138,8 @@ for t in range(np.size(th)):
   # Warning: here all E count the same <=> assuming flat spectrum
   ra = float(np.sum(oka))/np.size(oka)
   rc = float(np.sum(okc))/np.size(okc)
-  seffta[t] = 2*pi*sphi*ra   # Effective area integrated over phi
-  sefftc[t] = 2*pi*sphi*rc
+  seffta[t] = 2*pi*sphi*ra/(2*pi)   # Effective area integrated over phi and then averaged
+  sefftc[t] = 2*pi*sphi*rc/(2*pi) 
   #print '\n##E = 10^',e,',eV, theta = ',th[t],'deg:'
   #print 'Sphi =',sphi,'km^2'
   #print 'phi=',phi[sel]
@@ -150,11 +153,12 @@ print 'Apperture (agressive):',seffta,'km^2.sr'
 print 'Apperture (conservative):',sefftc,'km^2.sr'
 
 pl.figure(3)
+
 pl.plot(th,seffta,label='Agressive')
 pl.plot(th,sefftc,label='Conservative')
 pl.xlabel('Zenith angle (deg)')
-pl.ylabel('Apperture (km$^2$.sr)')
-pl.title("GRAND CR apperture (for a flat spectrum)")
+pl.ylabel('Eff. area$_{<\phi>}$ (km$^2$)')
+pl.title("GRAND CR apperture (for E=10$^{19}$eV)")
 pl.grid(True)
 pl.legend(loc='best')
 pl.show()
